@@ -1,5 +1,6 @@
-﻿import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { useEffect, useMemo, useState, useRef, useContext } from "react";
 import { useAuth } from "../context/AuthContext";
+import { LanguageContext } from "../context/LanguageContext";
 import WeatherStrip from "./WeatherStrip";
 import SpoilageRing from "./SpoilageRing";
 import SpoilageSimulator from "./SpoilageSimulator";
@@ -11,39 +12,9 @@ const formatRange = (range) => {
   return String(range).replace("[", "").replace("]", "").replace(")", "");
 };
 
-/* Resolve city/district input → proper Indian state name for API queries */
 const CITY_TO_STATE = {
   nagpur:"Maharashtra",wardha:"Maharashtra",amravati:"Maharashtra",akola:"Maharashtra",
   yavatmal:"Maharashtra",pune:"Maharashtra",mumbai:"Maharashtra",nashik:"Maharashtra",
-  aurangabad:"Maharashtra",solapur:"Maharashtra",kolhapur:"Maharashtra",sangli:"Maharashtra",
-  satara:"Maharashtra",latur:"Maharashtra",nanded:"Maharashtra",chandrapur:"Maharashtra",
-  buldhana:"Maharashtra",washim:"Maharashtra",hingoli:"Maharashtra",parbhani:"Maharashtra",
-  jalna:"Maharashtra",beed:"Maharashtra",osmanabad:"Maharashtra",raigad:"Maharashtra",
-  ratnagiri:"Maharashtra",thane:"Maharashtra",ahmednagar:"Maharashtra",
-  dhule:"Maharashtra",nandurbar:"Maharashtra",jalgaon:"Maharashtra",
-  gondia:"Maharashtra",bhandara:"Maharashtra",gadchiroli:"Maharashtra",
-  indore:"Madhya Pradesh",bhopal:"Madhya Pradesh",gwalior:"Madhya Pradesh",
-  jabalpur:"Madhya Pradesh",ujjain:"Madhya Pradesh",sagar:"Madhya Pradesh",
-  ratlam:"Madhya Pradesh",dewas:"Madhya Pradesh",mandsaur:"Madhya Pradesh",
-  neemuch:"Madhya Pradesh",
-  lucknow:"Uttar Pradesh",kanpur:"Uttar Pradesh",agra:"Uttar Pradesh",
-  varanasi:"Uttar Pradesh",allahabad:"Uttar Pradesh",meerut:"Uttar Pradesh",
-  ludhiana:"Punjab",amritsar:"Punjab",jalandhar:"Punjab",patiala:"Punjab",
-  bathinda:"Punjab",moga:"Punjab",ferozepur:"Punjab",sangrur:"Punjab",
-  ambala:"Haryana",karnal:"Haryana",panipat:"Haryana",hisar:"Haryana",
-  rohtak:"Haryana",sirsa:"Haryana",fatehabad:"Haryana",
-  jaipur:"Rajasthan",jodhpur:"Rajasthan",kota:"Rajasthan",ajmer:"Rajasthan",
-  bikaner:"Rajasthan",udaipur:"Rajasthan",alwar:"Rajasthan",bharatpur:"Rajasthan",
-  ahmedabad:"Gujarat",surat:"Gujarat",vadodara:"Gujarat",rajkot:"Gujarat",
-  bhavnagar:"Gujarat",anand:"Gujarat",gandhinagar:"Gujarat",junagadh:"Gujarat",
-  bangalore:"Karnataka",mysore:"Karnataka",hubli:"Karnataka",belgaum:"Karnataka",
-  gulbarga:"Karnataka",
-  vijayawada:"Andhra Pradesh",guntur:"Andhra Pradesh",kurnool:"Andhra Pradesh",
-  nellore:"Andhra Pradesh",visakhapatnam:"Andhra Pradesh",
-  warangal:"Telangana",nizamabad:"Telangana",karimnagar:"Telangana",
-  chennai:"Tamil Nadu",coimbatore:"Tamil Nadu",madurai:"Tamil Nadu",
-  kolkata:"West Bengal",howrah:"West Bengal",burdwan:"West Bengal",
-  patna:"Bihar",gaya:"Bihar",bhagalpur:"Bihar",muzaffarpur:"Bihar",
 };
 
 function resolveStateForQuery(input) {
@@ -61,17 +32,36 @@ function useDebounce(value, delay) {
   return debouncedValue;
 }
 
-const NAV_ITEMS = [
-  { id: "home", icon: "🏠", label: "Dashboard" },
-  { id: "recommend", icon: "🤖", label: "Get Recommendation" },
-  { id: "prices", icon: "📊", label: "Live Prices" },
-  { id: "weather", icon: "🌤️", label: "Weather" },
-  { id: "simulator", icon: "🧪", label: "Simulator" },
-  { id: "history", icon: "📋", label: "History" },
-];
+/* ─── Language Selector Component ──────────────────────────────────────────── */
+function LanguageSelector() {
+  const { language, setLanguage } = useContext(LanguageContext);
+  
+  return (
+    <select 
+      value={language} 
+      onChange={(e) => setLanguage(e.target.value)}
+      style={{
+        background: "transparent",
+        border: "1px solid var(--border)",
+        borderRadius: "6px",
+        padding: "6px 10px",
+        fontSize: "13px",
+        fontWeight: 500,
+        color: "var(--txt)",
+        cursor: "pointer",
+        outline: "none",
+      }}
+    >
+      <option value="en">English</option>
+      <option value="hi">हिन्दी</option>
+      <option value="mr">मराठी</option>
+    </select>
+  );
+}
 
 export default function FarmerHome() {
   const { user, logout } = useAuth();
+  const { t } = useContext(LanguageContext);
   const [crops, setCrops] = useState([]);
   const [cropId, setCropId] = useState(null);
   const [region, setRegion] = useState(user?.region || "");
@@ -94,13 +84,22 @@ export default function FarmerHome() {
 
   const selectedCrop = useMemo(() => crops.find((c) => c.id === cropId), [crops, cropId]);
 
+  const NAV_ITEMS = [
+    { id: "home", icon: "🏠", label: t('dashboard') },
+    { id: "recommend", icon: "✨", label: t('getRecommendation') },
+    { id: "prices", icon: "₹", label: t('livePrices') },
+    { id: "weather", icon: "☀", label: t('weather') },
+    { id: "simulator", icon: "⚙", label: t('simulator') },
+    { id: "history", icon: "⏰", label: t('history') },
+  ];
+
   useEffect(() => {
     const init = async () => {
       try {
         const cropRows = await apiGet("/api/crops");
         setCrops(cropRows);
         if (cropRows.length && !cropId) setCropId(cropRows[0].id);
-      } catch { setError("Failed to load crops."); }
+      } catch { setError(t('failedToGenerate')); }
     };
     init();
   }, []);
@@ -115,8 +114,8 @@ export default function FarmerHome() {
         weatherAbortRef.current = controller;
         const data = await apiGet(`/api/weather?region=${encodeURIComponent(debouncedRegion)}&live=1`);
         if (!controller.cancelled) setWeather(data);
-      } catch (err) {
-        if (!weatherAbortRef.current?.cancelled) { setWeather([]); }
+      } catch {
+        if (!weatherAbortRef.current?.cancelled) setWeather([]);
       } finally {
         if (!weatherAbortRef.current?.cancelled) setWeatherLoading(false);
       }
@@ -159,8 +158,8 @@ export default function FarmerHome() {
 
   const analyze = async () => {
     setError("");
-    if (!cropId) { setError("Please select a crop."); return; }
-    if (!region) { setError("Please enter a region/state."); return; }
+    if (!cropId) { setError(t('pleaseSelectCrop')); return; }
+    if (!region) { setError(t('pleaseEnterRegion')); return; }
     setLoading(true);
     setResult(null);
     try {
@@ -199,21 +198,23 @@ export default function FarmerHome() {
       setHistory((prev) => [data, ...prev]);
       setTab("home");
     } catch (err) {
-      setError(err?.message || "Failed to generate recommendation.");
+      setError(err?.message || t('failedToGenerate'));
     } finally {
       setLoading(false);
     }
   };
 
   const hour = new Date().getHours();
-  const greet = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const greet = hour < 12 ? t('goodMorning') : hour < 17 ? t('goodAfternoon') : t('goodEvening');
 
-  /* ── Sidebar ── */
   const Sidebar = () => (
     <aside className="farmer-sidebar">
       <div style={{ padding: "0 18px 20px" }}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: "var(--txt3)", textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 12 }}>
-          Farmer Portal
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "var(--txt3)", textTransform: "uppercase", letterSpacing: 1.2 }}>
+            {t('farmerPortal')}
+          </div>
+          <LanguageSelector />
         </div>
         {NAV_ITEMS.map(item => (
           <button
@@ -226,16 +227,14 @@ export default function FarmerHome() {
           </button>
         ))}
       </div>
-
-      {/* Quick stats in sidebar */}
       <div style={{ padding: "16px 18px", borderTop: "1px solid var(--border)", marginTop: "auto" }}>
         <div style={{ fontSize: 10, fontWeight: 700, color: "var(--txt3)", textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 12 }}>
-          Quick Stats
+          {t('quickStats')}
         </div>
         {[
-          { label: "Recommendations", val: history.length },
-          { label: "Active Crop", val: selectedCrop?.name || "—" },
-          { label: "Region", val: region || "Not set" },
+          { label: t('recommendations'), val: history.length },
+          { label: t('activeCrop'), val: selectedCrop?.name || "-" },
+          { label: t('region'), val: region || t('notSet') },
         ].map(s => (
           <div key={s.label} style={{ marginBottom: 10 }}>
             <div style={{ fontSize: 11, color: "var(--txt3)", marginBottom: 2 }}>{s.label}</div>
@@ -243,136 +242,114 @@ export default function FarmerHome() {
           </div>
         ))}
       </div>
-
       <div className="sidebar-logout">
         <button className="sidebar-logout-btn" onClick={logout}>
-          <span>↩</span> Sign out
+          <span>🚪</span> {t('signOut')}
         </button>
       </div>
     </aside>
   );
 
-  /* ════════════════════════════════════════════════════════════
-     RENDER
-  ════════════════════════════════════════════════════════════ */
   return (
     <div className="farmer-layout">
       <Sidebar />
-
       <main className="farmer-content">
-
-        {/* ══ HOME / DASHBOARD ══ */}
         {tab === "home" && (
           <div style={{ animation: "fadeUp .5s ease" }}>
             <div className="page-greet">
               <h2>{greet}, {user?.name} 👋</h2>
-              <p>Here's your farm intelligence overview for today.</p>
+              <p>{t('farmOverview')}</p>
             </div>
-
-            {/* Summary cards like agricltur */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 24 }}>
               <div className="stat-card">
                 <div className="stat-icon">🌾</div>
                 <div className="stat-val">{crops.length}</div>
-                <div className="stat-lbl">Crops Available</div>
-                <div className="stat-sub">● Registered</div>
+                <div className="stat-lbl">{t('cropsAvailable')}</div>
               </div>
               <div className="stat-card">
                 <div className="stat-icon">📋</div>
                 <div className="stat-val">{history.length}</div>
-                <div className="stat-lbl">Recommendations</div>
-                <div className="stat-sub">● All time</div>
+                <div className="stat-lbl">{t('recommendations')}</div>
               </div>
               <div className="stat-card">
                 <div className="stat-icon">💰</div>
                 <div className="stat-val">
                   {result ? `₹${Number(result.net_profit || 0).toLocaleString()}` : "--"}
                 </div>
-                <div className="stat-lbl">Latest Est. Profit</div>
-                <div className="stat-sub">● Last recommendation</div>
+                <div className="stat-lbl">{t('latestEstProfit')}</div>
               </div>
               <div className="stat-card">
-                <div className="stat-icon">⚠️</div>
+                <div className="stat-icon">⚠</div>
                 <div className="stat-val">
                   {result ? `${Math.round(result.spoilage_risk * 100)}%` : "--"}
                 </div>
-                <div className="stat-lbl">Spoilage Risk</div>
-                <div className="stat-sub">● Current</div>
+                <div className="stat-lbl">{t('spoilageRisk')}</div>
               </div>
             </div>
-
-            {/* Latest result or empty prompt */}
             {!result ? (
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-                {/* Prompt card */}
                 <div className="g-card-solid" style={{ padding: 32, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 240, textAlign: "center", gridColumn: "1/-1" }}>
-                  <div style={{ width: 64, height: 64, borderRadius: 16, background: "linear-gradient(135deg,var(--gd),var(--gm))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, marginBottom: 20, boxShadow: "0 0 30px rgba(74,222,128,0.2)" }}>
-                    🤖
+                  <div style={{ width: 64, height: 64, borderRadius: 16, background: "linear-gradient(135deg,var(--green),var(--green-light))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, marginBottom: 20 }}>
+                    🌱
                   </div>
                   <div style={{ fontFamily: "var(--font-head)", fontWeight: 800, fontSize: 20, color: "var(--txt)", marginBottom: 10 }}>
-                    Get your AI recommendation
+                    {t('getAiRec')}
                   </div>
                   <p style={{ fontSize: 14, color: "var(--txt2)", marginBottom: 24, maxWidth: 380, fontWeight: 300, lineHeight: 1.65 }}>
-                    Select your crop, region, and quantity in the recommendation tab to get today's AI-powered harvest and market advice.
+                    {t('recSubtitle')}
                   </p>
                   <button className="btn-primary" onClick={() => setTab("recommend")}>
-                    Get Recommendation →
+                    {t('getRecommendation')} ✨
                   </button>
                 </div>
               </div>
             ) : (
               <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 20 }}>
-                {/* AI Result */}
                 <div className="g-card-solid" style={{ padding: 24 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
-                    <div className="card-icon">🤖</div>
+                    <div className="card-icon">✨</div>
                     <div>
-                      <div className="card-title">AI Recommendation</div>
-                      <div className="card-sub">Based on weather, prices & soil data</div>
+                      <div className="card-title">{t('aiRecommendation')}</div>
+                      <div className="card-sub">{t('basedOnWeather')}</div>
                     </div>
                   </div>
                   <div className="rec-headline">
                     <div className="rec-mandi-icon">M</div>
                     <div>
                       <div className="rec-mandi-name">{result.best_mandi}</div>
-                      <div className="rec-mandi-sub">{result.harvest_window} · Best net return</div>
+                      <div className="rec-mandi-sub">{result.harvest_window} - {t('bestNetReturn')}</div>
                     </div>
                   </div>
                   <div className="rec-metrics">
                     <div className="metric">
                       <div className="metric-val">₹{result.predicted_price.toLocaleString()}</div>
-                      <div className="metric-lbl">Price/quintal</div>
+                      <div className="metric-lbl">{t('priceQuintal')}</div>
                     </div>
                     <div className="metric">
                       <div className="metric-val">₹{Number(result.net_profit).toLocaleString()}</div>
-                      <div className="metric-lbl">Est. Net Profit</div>
+                      <div className="metric-lbl">{t('estNetProfit')}</div>
                     </div>
                     <div className="metric">
                       <div className="metric-val">{Math.round(result.spoilage_risk * 100)}%</div>
-                      <div className="metric-lbl">Spoilage Risk</div>
+                      <div className="metric-lbl">{t('spoilageRisk')}</div>
                     </div>
                   </div>
                   <div className="ai-explain">
-                    <div className="ai-explain-tag">AI Explanation</div>
+                    <div className="ai-explain-tag">{t('aiExplanation')}</div>
                     <p>{result.explanation}</p>
-                    {result.soil_score != null && <p style={{ marginTop: 8 }}>Soil suitability: <b style={{ color: "var(--g)" }}>{result.soil_score}%</b></p>}
+                    {result.soil_score != null && <p style={{ marginTop: 8 }}>{t('soilSuitability')}: <b style={{ color: "var(--g)" }}>{result.soil_score}%</b></p>}
                   </div>
                 </div>
-                {/* Spoilage ring */}
                 <div className="g-card-solid" style={{ padding: 24, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                  <SpoilageRing risk={result.spoilage_risk} />
+                  <SpoilageRing risk={result.spoilage_risk} weather={result.weather} />
                 </div>
               </div>
             )}
-
-            {/* Weather strip if available */}
             {result && (
               <div style={{ marginTop: 20 }}>
                 <WeatherStrip weather={result.weather} loading={weatherLoading} />
               </div>
             )}
-
-            {/* Mandi table */}
             {result && mandis.length > 0 && (
               <div style={{ marginTop: 20 }}>
                 <MandiTable mandis={mandis} />
@@ -380,112 +357,99 @@ export default function FarmerHome() {
             )}
           </div>
         )}
-
-        {/* ══ RECOMMEND ══ */}
         {tab === "recommend" && (
           <div style={{ animation: "fadeUp .5s ease" }}>
             <div className="page-greet">
-              <h2>Get AI Recommendation</h2>
-              <p>Enter your crop details to generate today's harvest and market advice.</p>
+              <h2>{t('getRecommendation')}</h2>
+              <p>{t('recSubtitle')}</p>
             </div>
-
-            {/* Main form */}
             <div className="g-card-solid" style={{ padding: 28, marginBottom: 20 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}>
-                <div className="card-icon">🌾</div>
+                <div className="card-icon">✨</div>
                 <div>
-                  <div className="card-title">Crop & Region</div>
-                  <div className="card-sub">Required for recommendation</div>
+                  <div className="card-title">{t('crop')} {t('region')}</div>
+                  <div className="card-sub">{t('selectCrop')}</div>
                 </div>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 20 }}>
                 <div className="field">
-                  <label>Crop</label>
+                  <label>{t('crop')}</label>
                   <select value={cropId || ""} onChange={e => setCropId(Number(e.target.value))}>
                     {crops.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                 </div>
                 <div className="field">
-                  <label>Region (State)</label>
+                  <label>{t('regionState')}</label>
                   <input value={region} onChange={e => setRegion(e.target.value)} placeholder="Maharashtra" />
                 </div>
                 <div className="field">
-                  <label>Quantity (quintals)</label>
+                  <label>{t('quantity')}</label>
                   <input value={qty} onChange={e => setQty(e.target.value)} placeholder="100" type="number" />
                 </div>
                 <div style={{ display: "flex", alignItems: "flex-end" }}>
                   <button className="btn-primary" style={{ width: "100%", padding: "12px" }} onClick={analyze} disabled={loading}>
-                    {loading ? "Analyzing..." : "Get Recommendation →"}
+                    {loading ? t('analyzing') : `${t('analyze')} ✨`}
                   </button>
                 </div>
               </div>
-
-              {/* Optional soil inputs */}
               <div style={{ borderTop: "1px solid var(--border)", paddingTop: 20 }}>
                 <div style={{ fontSize: 12, color: "var(--txt3)", fontWeight: 600, textTransform: "uppercase", letterSpacing: .8, marginBottom: 14 }}>
-                  🌱 Soil Data (Optional — improves accuracy)
+                  🌱 {t('soilData')}
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, marginBottom: 14 }}>
-                  <div className="field"><label>Soil pH</label><input value={soil.ph} onChange={e => setSoil({ ...soil, ph: e.target.value })} placeholder="6.5" /></div>
-                  <div className="field"><label>Nitrogen (N)</label><input value={soil.n} onChange={e => setSoil({ ...soil, n: e.target.value })} placeholder="90" /></div>
-                  <div className="field"><label>Phosphorus (P)</label><input value={soil.p} onChange={e => setSoil({ ...soil, p: e.target.value })} placeholder="50" /></div>
-                  <div className="field"><label>Potassium (K)</label><input value={soil.k} onChange={e => setSoil({ ...soil, k: e.target.value })} placeholder="60" /></div>
+                  <div className="field"><label>{t('soilPh')}</label><input value={soil.ph} onChange={e => setSoil({ ...soil, ph: e.target.value })} placeholder="6.5" /></div>
+                  <div className="field"><label>{t('nitrogen')}</label><input value={soil.n} onChange={e => setSoil({ ...soil, n: e.target.value })} placeholder="90" /></div>
+                  <div className="field"><label>{t('phosphorus')}</label><input value={soil.p} onChange={e => setSoil({ ...soil, p: e.target.value })} placeholder="50" /></div>
+                  <div className="field"><label>{t('potassium')}</label><input value={soil.k} onChange={e => setSoil({ ...soil, k: e.target.value })} placeholder="60" /></div>
                 </div>
               </div>
-
-              {/* Optional storage inputs */}
               <div style={{ borderTop: "1px solid var(--border)", paddingTop: 20 }}>
                 <div style={{ fontSize: 12, color: "var(--txt3)", fontWeight: 600, textTransform: "uppercase", letterSpacing: .8, marginBottom: 14 }}>
-                  📦 Storage Conditions (Optional)
+                  ❄ {t('storageConditions')}
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 14 }}>
-                  <div className="field"><label>Storage Temp (°C)</label><input value={storage.temp} onChange={e => setStorage({ ...storage, temp: e.target.value })} placeholder="18" /></div>
-                  <div className="field"><label>Humidity (%)</label><input value={storage.humidity} onChange={e => setStorage({ ...storage, humidity: e.target.value })} placeholder="60" /></div>
-                  <div className="field"><label>Transit Time (hrs)</label><input value={storage.transit} onChange={e => setStorage({ ...storage, transit: e.target.value })} placeholder="6" /></div>
+                  <div className="field"><label>{t('storageTemp')}</label><input value={storage.temp} onChange={e => setStorage({ ...storage, temp: e.target.value })} placeholder="18" /></div>
+                  <div className="field"><label>{t('humidity')}</label><input value={storage.humidity} onChange={e => setStorage({ ...storage, humidity: e.target.value })} placeholder="60" /></div>
+                  <div className="field"><label>{t('transitTime')}</label><input value={storage.transit} onChange={e => setStorage({ ...storage, transit: e.target.value })} placeholder="6" /></div>
                 </div>
               </div>
-
               {error && (
                 <div style={{ marginTop: 16, padding: 12, background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)", borderRadius: 9, color: "var(--red)", fontSize: 13 }}>
                   ⚠ {error}
                 </div>
               )}
             </div>
-
-            {/* Loading */}
             {loading && (
               <div className="g-card-solid" style={{ padding: 48, textAlign: "center" }}>
                 <div className="loading-dots"><span /><span /><span /></div>
-                <p style={{ color: "var(--txt2)", fontSize: 14, fontWeight: 300 }}>Running AI models — price forecasting, spoilage estimation, route optimisation...</p>
+                <p style={{ color: "var(--txt2)", fontSize: 14, fontWeight: 300 }}>{t('analyzing')}</p>
               </div>
             )}
-
-            {/* Result */}
             {!loading && result && (
               <>
                 <div style={{ display: "grid", gridTemplateColumns: "3fr 1fr", gap: 20, marginBottom: 20 }}>
                   <div className="rec-card">
-                    <h3>AI Recommendation</h3>
+                    <h3>{t('aiRecommendation')}</h3>
                     <div className="rec-headline">
                       <div className="rec-mandi-icon">M</div>
                       <div>
                         <div className="rec-mandi-name">{result.best_mandi}</div>
-                        <div className="rec-mandi-sub">{result.harvest_window} · Best net return</div>
+                        <div className="rec-mandi-sub">{result.harvest_window} - {t('bestNetReturn')}</div>
                       </div>
                     </div>
                     <div className="rec-metrics">
-                      <div className="metric"><div className="metric-val">₹{result.predicted_price.toLocaleString()}</div><div className="metric-lbl">Price/quintal</div></div>
-                      <div className="metric"><div className="metric-val">₹{Number(result.net_profit).toLocaleString()}</div><div className="metric-lbl">Est. Net Profit</div></div>
-                      <div className="metric"><div className="metric-val">{Math.round(result.spoilage_risk * 100)}%</div><div className="metric-lbl">Spoilage Risk</div></div>
+                      <div className="metric"><div className="metric-val">₹{result.predicted_price.toLocaleString()}</div><div className="metric-lbl">{t('priceQuintal')}</div></div>
+                      <div className="metric"><div className="metric-val">₹{Number(result.net_profit).toLocaleString()}</div><div className="metric-lbl">{t('estNetProfit')}</div></div>
+                      <div className="metric"><div className="metric-val">{Math.round(result.spoilage_risk * 100)}%</div><div className="metric-lbl">{t('spoilageRisk')}</div></div>
                     </div>
                     <div className="ai-explain">
-                      <div className="ai-explain-tag">AI Explanation</div>
+                      <div className="ai-explain-tag">{t('aiExplanation')}</div>
                       <p>{result.explanation}</p>
-                      {result.soil_score != null && <p style={{ marginTop: 8 }}>Soil suitability: <b style={{ color: "var(--g)" }}>{result.soil_score}%</b></p>}
+                      {result.soil_score != null && <p style={{ marginTop: 8 }}>{t('soilSuitability')}: <b style={{ color: "var(--g)" }}>{result.soil_score}%</b></p>}
                     </div>
                     {selectedCrop && (
                       <div style={{ marginTop: 16, padding: 14, background: "rgba(255,255,255,0.03)", borderRadius: 10, border: "1px solid var(--border)" }}>
-                        <div style={{ fontSize: 12, color: "var(--txt3)", fontWeight: 600, marginBottom: 8 }}>Crop Optimal Ranges</div>
+                        <div style={{ fontSize: 12, color: "var(--txt3)", fontWeight: 600, marginBottom: 8 }}>{t('cropOptimalRanges')}</div>
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8 }}>
                           {[
                             { label: "pH", val: formatRange(selectedCrop.optimal_ph_range) },
@@ -503,20 +467,20 @@ export default function FarmerHome() {
                     )}
                     {result.preservation_actions?.length > 0 && (
                       <div style={{ marginTop: 16 }}>
-                        <div style={{ fontSize: 12, color: "var(--txt3)", fontWeight: 600, marginBottom: 10 }}>🛡️ Preservation Recommendations</div>
+                        <div style={{ fontSize: 12, color: "var(--txt3)", fontWeight: 600, marginBottom: 10 }}>📦 {t('preservationRecommendations')}</div>
                         {result.preservation_actions.map((a) => (
                           <div key={a.id} style={{ display: "flex", gap: 12, padding: "10px 14px", background: "rgba(74,222,128,0.04)", border: "1px solid var(--border)", borderRadius: 9, marginBottom: 8 }}>
-                            <span style={{ color: "var(--g)" }}>●</span>
+                            <span style={{ color: "var(--g)" }}>✓</span>
                             <div>
                               <div style={{ fontSize: 13, fontWeight: 600, color: "var(--txt)" }}>{a.action_name}</div>
-                              <div style={{ fontSize: 12, color: "var(--txt2)", fontWeight: 300 }}>{a.description} · Cost: {a.cost_score}/5 · Effectiveness: {a.effectiveness_score}/5</div>
+                              <div style={{ fontSize: 12, color: "var(--txt2)", fontWeight: 300 }}>{a.description} - {t('cost')}: {a.cost_score}/5 - {t('effectiveness')}: {a.effectiveness_score}/5</div>
                             </div>
                           </div>
                         ))}
                       </div>
                     )}
                   </div>
-                  <SpoilageRing risk={result.spoilage_risk} />
+                  <SpoilageRing risk={result.spoilage_risk} weather={result.weather} />
                 </div>
                 <WeatherStrip weather={result.weather} loading={weatherLoading} />
                 <MandiTable mandis={mandis} />
@@ -524,91 +488,49 @@ export default function FarmerHome() {
             )}
           </div>
         )}
-
-        {/* ══ PRICES ══ */}
         {tab === "prices" && (
           <div style={{ animation: "fadeUp .5s ease" }}>
             <div className="page-greet">
-              <h2>Live Mandi Prices</h2>
-              <p>Real-time APMC prices for {selectedCrop?.name || "your crop"} in {region || "your region"}.</p>
+              <h2>{t('livePrices')}</h2>
+              <p>{t('enterRegionCrop')}</p>
             </div>
-
             {result && (
               <div className="ai-suggestion-box" style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 11, color: "var(--g)", letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 }}>🤖 AI Recommended</div>
+                <div style={{ fontSize: 11, color: "var(--g)", letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 }}>✨ {t('aiRecommendation')}</div>
                 <div style={{ fontFamily: "var(--font-head)", fontWeight: 800, fontSize: 22, color: "var(--txt)", marginBottom: 4 }}>{result.best_mandi}</div>
                 <div style={{ fontSize: 13, color: "var(--txt2)" }}>
-                  Predicted Price: ₹{result.predicted_price.toLocaleString()}/q · Est. Profit: ₹{Number(result.net_profit).toLocaleString()} · Risk: {Math.round(result.spoilage_risk * 100)}%
+                  {t('priceQuintal')}: ₹{result.predicted_price.toLocaleString()}/q - {t('estNetProfit')}: ₹{Number(result.net_profit).toLocaleString()} - {t('spoilageRisk')}: {Math.round(result.spoilage_risk * 100)}%
                 </div>
               </div>
             )}
-
             {mandiLoading && (
               <div className="g-card-solid" style={{ padding: 48, textAlign: "center" }}>
                 <div className="loading-dots"><span /><span /><span /></div>
-                <p style={{ color: "var(--txt2)", fontSize: 14 }}>Loading live prices...</p>
+                <p style={{ color: "var(--txt2)", fontSize: 14 }}>{t('loading')}</p>
               </div>
             )}
-
             {!mandiLoading && mandis.length > 0 && (
-              <>
-                <MandiTable mandis={mandis} />
-                {result && (
-                  <div className="g-card-solid" style={{ padding: 24, marginTop: 20 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
-                      <div className="card-icon">📊</div>
-                      <div className="card-title">Profitability Comparison</div>
-                    </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 14 }}>
-                      {mandis.slice(0, 5).map((m, i) => {
-                        const isRec = m.mandi_name === result.best_mandi;
-                        const transportCost = m.distance ? m.distance * 25 : 0;
-                        const profit = (Number(m.price || 0) * Number(qty || 0)) - transportCost;
-                        return (
-                          <div key={i} style={{
-                            padding: 16, borderRadius: 12,
-                            border: isRec ? "1.5px solid var(--g)" : "1px solid var(--border)",
-                            background: isRec ? "rgba(74,222,128,0.06)" : "rgba(255,255,255,0.03)",
-                          }}>
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                              <span style={{ fontSize: 13, fontWeight: 600, color: "var(--txt)" }}>{m.mandi_name}</span>
-                              {isRec && <span style={{ fontSize: 10, color: "var(--g)", fontWeight: 700, letterSpacing: 1 }}>✓ BEST</span>}
-                            </div>
-                            <div style={{ fontSize: 12, color: "var(--txt3)", lineHeight: 1.8 }}>
-                              <div>Price: <b style={{ color: "var(--txt)" }}>₹{Number(m.price || 0).toLocaleString()}/q</b></div>
-                              <div>Transport: <b style={{ color: "var(--amber)" }}>₹{transportCost.toLocaleString()}</b></div>
-                              <div>Est. Profit: <b style={{ color: profit > 0 ? "var(--g)" : "var(--red)" }}>₹{profit.toLocaleString()}</b></div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </>
+              <MandiTable mandis={mandis} />
             )}
-
             {!mandiLoading && mandis.length === 0 && (
               <div className="g-card-solid" style={{ padding: 48 }}>
                 <div className="empty-state">
-                  <div className="empty-icon">📊</div>
-                  <p>No live mandi prices available.</p>
-                  <p style={{ fontSize: 12, marginTop: 8 }}>Enter a region and select a crop to see prices.</p>
+                  <div className="empty-icon">🏪</div>
+                  <p>{t('noLivePrices')}</p>
+                  <p style={{ fontSize: 12, marginTop: 8 }}>{t('enterRegionCrop')}</p>
                 </div>
               </div>
             )}
           </div>
         )}
-
-        {/* ══ WEATHER ══ */}
         {tab === "weather" && (
           <div style={{ animation: "fadeUp .5s ease" }}>
             <div className="page-greet">
-              <h2>Live Weather Forecast</h2>
-              <p>7-day weather analysis for {region || "your region"}.</p>
+              <h2>{t('weather')}</h2>
+              <p>{t('dayWeatherForecast')} {region || t('notSet')}</p>
             </div>
             <div className="mandi-table-card">
-              <h3>Weather Forecast</h3>
+              <h3>{t('weather')}</h3>
               <WeatherStrip
                 weather={weather.map((w) => ({
                   day: new Date(w.forecast_date).toLocaleDateString(undefined, { weekday: "short" }),
@@ -621,47 +543,43 @@ export default function FarmerHome() {
             </div>
           </div>
         )}
-
-        {/* ══ SIMULATOR ══ */}
         {tab === "simulator" && (
           <div style={{ animation: "fadeUp .5s ease" }}>
             <div className="page-greet">
-              <h2>Spoilage Simulator</h2>
-              <p>Test how different storage conditions affect spoilage risk.</p>
+              <h2>{t('simulator')}</h2>
+              <p>{t('spoilageRiskEstimator')}</p>
             </div>
             <SpoilageSimulator />
           </div>
         )}
-
-        {/* ══ HISTORY ══ */}
         {tab === "history" && (
           <div style={{ animation: "fadeUp .5s ease" }}>
             <div className="page-greet">
-              <h2>Recommendation History</h2>
-              <p>All your past AI-generated recommendations.</p>
+              <h2>{t('history')}</h2>
+              <p>{t('pastRecommendations')}</p>
             </div>
             {history.length === 0 ? (
               <div className="g-card-solid" style={{ padding: 48 }}>
                 <div className="empty-state">
                   <div className="empty-icon">📋</div>
-                  <p>No recommendations yet. Go to Get Recommendation to start.</p>
+                  <p>{t('noRecommendations')}</p>
                 </div>
               </div>
             ) : (
               <div className="g-card-solid" style={{ padding: 24 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
                   <div className="card-icon">📋</div>
-                  <div className="card-title">Past Recommendations</div>
+                  <div className="card-title">{t('pastRecommendations')}</div>
                 </div>
                 <div style={{ overflowX: "auto" }}>
                   <table className="g-table">
                     <thead>
                       <tr>
-                        <th>Crop</th>
+                        <th>{t('crop')}</th>
                         <th>Mandi</th>
-                        <th>Harvest Window</th>
-                        <th>Est. Profit</th>
-                        <th>Risk</th>
+                        <th>{t('harvestWindow')}</th>
+                        <th>{t('estNetProfit')}</th>
+                        <th>{t('spoilageRisk')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -674,7 +592,7 @@ export default function FarmerHome() {
                             <td style={{ padding: "12px 16px", fontSize: 13, color: "var(--txt)", fontWeight: 600 }}>{r.suggested_mandi}</td>
                             <td style={{ padding: "12px 16px", fontSize: 12, color: "var(--txt3)" }}>{r.harvest_window}</td>
                             <td style={{ padding: "12px 16px", fontSize: 13, fontWeight: 700, color: "var(--g)" }}>₹{Number(r.predicted_profit || 0).toLocaleString()}</td>
-                            <td style={{ padding: "12px 16px" }}><span className={`risk-chip ${riskClass}`}>{Math.round(risk)}%</span></td>
+                            <td style={{ padding: "12px 16px" }}><span className={`risk_chip ${riskClass}`}>{Math.round(risk)}%</span></td>
                           </tr>
                         );
                       })}
@@ -685,7 +603,6 @@ export default function FarmerHome() {
             )}
           </div>
         )}
-
       </main>
     </div>
   );

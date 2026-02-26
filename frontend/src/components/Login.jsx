@@ -1,9 +1,11 @@
-﻿import { useState } from "react";
+﻿import { useState, useContext } from "react";
 import { useAuth } from "../context/AuthContext";
+import { LanguageContext } from "../context/LanguageContext";
 import logo from "../assets/AgriRakshak.png";
 
 export default function Login({ onSuccess, onSwitch }) {
   const { login } = useAuth();
+  const { t } = useContext(LanguageContext);
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
   const [loading, setLoading] = useState(false);
@@ -36,22 +38,21 @@ export default function Login({ onSuccess, onSwitch }) {
             border: "1px solid rgba(74,222,128,0.4)",
             display: "flex", alignItems: "center", justifyContent: "center",
             fontFamily: "var(--font-head)", fontWeight: 800, fontSize: 14, color: "#4ade80",
-          }}>AC</div>
-          Agriरक्षक
+          }}>AR</div>
+          AgriRakshak
         </div>
 
-        <h2>Welcome<br />back.</h2>
+        <h2>{t('welcomeBack')}</h2>
         <p style={{ marginBottom: 40 }}>
-          Your personalized harvest and market intelligence is waiting.
-          Log in to see today's AI recommendations.
+          {t('loginSubtitle')}
         </p>
 
         {/* Feature list */}
         {[
-          "7-day weather harvest windows",
-          "Live mandi price predictions",
-          "Transport cost optimisation",
-          "Explainable AI insights",
+          t('feature1'),
+          t('feature2'),
+          t('feature3'),
+          t('feature4'),
         ].map((f) => (
           <div className="auth-feat" key={f}>
             <div className="auth-feat-dot" />
@@ -65,12 +66,12 @@ export default function Login({ onSuccess, onSwitch }) {
           background: "rgba(74,222,128,0.05)", border: "1px solid rgba(74,222,128,0.12)",
         }}>
           <div style={{ fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: "var(--g)", marginBottom: 10 }}>
-            Today's Market Pulse
+            {t('todaysMarket')}
           </div>
           {[
-            { crop: "Wheat", mandi: "Nagpur APMC", price: "₹2,180/q", trend: "+3.2%" },
-            { crop: "Soybean", mandi: "Pune APMC", price: "₹4,450/q", trend: "+1.8%" },
-            { crop: "Cotton", mandi: "Aurangabad", price: "₹6,200/q", trend: "-0.5%" },
+            { crop: t('wheat'), mandi: t('nagpurApmc'), price: "₹2,180/q", trend: "+3.2%" },
+            { crop: t('soybean'), mandi: t('puneApmc'), price: "₹4,450/q", trend: "+1.8%" },
+            { crop: t('cotton'), mandi: t('aurangabad'), price: "₹6,200/q", trend: "-0.5%" },
           ].map((item) => (
             <div key={item.crop} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid rgba(74,222,128,0.08)" }}>
               <div>
@@ -97,18 +98,18 @@ export default function Login({ onSuccess, onSwitch }) {
               border: "1px solid rgba(74,222,128,0.4)",
               display: "flex", alignItems: "center", justifyContent: "center",
               fontFamily: "var(--font-head)", fontWeight: 800, fontSize: 10, color: "#4ade80",
-            }}>AC</div>
+            }}>AR</div>
             <span style={{ fontFamily: "var(--font-head)", fontWeight: 800, fontSize: 14, color: "var(--txt)" }}>
-              AGRi<span style={{ color: "var(--g)" }}>रक्षक</span>
+              AGRi<span style={{ color: "var(--g)" }}>Rakshak</span>
             </span>
           </div>
 
-          <h3>Sign in</h3>
-          <p>Enter your credentials to continue</p>
+          <h3>{t('signIn')}</h3>
+          <p>{t('enterCredentials')}</p>
 
           <div className="auth-fields">
             <div className="field">
-              <label>Email address</label>
+              <label>{t('email')}</label>
               <input
                 value={email}
                 onChange={e => setEmail(e.target.value)}
@@ -118,7 +119,7 @@ export default function Login({ onSuccess, onSwitch }) {
               />
             </div>
             <div className="field">
-              <label>Password</label>
+              <label>{t('password')}</label>
               <input
                 type="password"
                 value={pass}
@@ -132,16 +133,16 @@ export default function Login({ onSuccess, onSwitch }) {
           {error && <div className="auth-error">⚠ {error}</div>}
 
           <button className="btn-submit" onClick={handleSubmit} disabled={loading}>
-            {loading ? "Signing in..." : "Sign In →"}
+            {loading ? t('signingIn') : `${t('signIn')} →`}
           </button>
 
           <div className="auth-switch">
-            Don't have an account?{" "}
-            <span onClick={onSwitch}>Register here</span>
+            {t('noAccount')}{" "}
+            <span onClick={onSwitch}>{t('registerHere')}</span>
           </div>
 
           <div style={{ marginTop: 24, padding: 14, borderRadius: 10, background: "rgba(74,222,128,0.04)", border: "1px solid rgba(74,222,128,0.1)", fontSize: 12, color: "var(--txt3)", textAlign: "center" }}>
-            🔒 Secured · Data sourced from Agmarknet & Open-Meteo
+            🔒 {t('secured')} · {t('dataSource')}
           </div>
         </div>
       </div>

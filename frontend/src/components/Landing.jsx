@@ -1,33 +1,63 @@
-﻿import { useEffect, useState } from "react";
+﻿import { useEffect, useState, useContext } from "react";
 import { apiGet } from "../services/api";
+import { LanguageContext } from "../context/LanguageContext";
 import logo from "../assets/AgriRakshak.png";
 
-/* ─── Ticker items ─────────────────────────────────────────────────────────── */
-const TICKER = ["7-Day Weather Forecast", "Real-Time Mandi Prices", "ML Harvest Timing", "Transport Cost Analysis", "Explainable AI Insights", "Spoilage Risk Alerts", "Multi-Mandi Comparison", "Seasonal Profit Reports"];
+/* ─── Constants ─────────────────────────────────────────────────────────────── */
+const TICKER = [
+  "7-Day Weather Forecast", "Real-Time Mandi Prices", "ML Harvest Timing", 
+  "Transport Cost Analysis", "Explainable AI Insights", "Spoilage Risk Alerts", 
+  "Multi-Mandi Comparison", "Seasonal Profit Reports"
+];
 
-/* ─── Features ─────────────────────────────────────────────────────────────── */
 const FEATURES = [
-  { badge: "WX", title: "7-Day Weather Intelligence", desc: "Real-time meteorological analysis predicts spoilage risk windows and identifies optimal harvest days — so you never cut too early or too late." },
-  { badge: "ML", title: "Mandi Price Prediction", desc: "Machine learning models trained on years of historical APMC data forecast prices 7 days ahead across every nearby mandi, giving you time to plan." },
-  { badge: "TX", title: "Transport Cost Engine", desc: "Factor in fuel, distance, and logistics to reveal true net profit at each market. Compare all nearby mandis on a single screen before you load the truck." },
-  { badge: "AI", title: "Explainable AI Decisions", desc: "Every recommendation comes with a plain-language explanation — weather, price trend, transport cost — so you always understand the reasoning behind each suggestion." },
+  { badge: "01", title: "7-Day Weather Intelligence", desc: "Real-time meteorological analysis predicts spoilage risk windows and identifies optimal harvest days." },
+  { badge: "02", title: "Mandi Price Prediction", desc: "Machine learning models trained on historical APMC data forecast prices 7 days ahead." },
+  { badge: "03", title: "Transport Cost Engine", desc: "Factor in fuel, distance, and logistics to reveal true net profit at each market." },
+  { badge: "04", title: "Explainable AI Decisions", desc: "Every recommendation comes with a plain-language explanation." },
 ];
 
-/* ─── How it works ──────────────────────────────────────────────────────────── */
 const STEPS = [
-  { num: "01", title: "Connect Your Farm", desc: "Enter your location and the crops you grow. Agri रक्षक pulls local weather and identifies your nearest mandis automatically." },
-  { num: "02", title: "Get AI Recommendations", desc: "Our models analyse weather forecasts, mandi price trends, and transport costs to generate ranked harvest-and-sell recommendations." },
-  { num: "03", title: "Sell at the Right Price", desc: "Choose your optimal window, head to the recommended mandi, and maximise profit every season — backed by data, not guesswork." },
+  { num: "1", title: "Connect Your Farm", desc: "Enter your location and the crops you grow." },
+  { num: "2", title: "Get AI Recommendations", desc: "Our models analyse weather forecasts and mandi prices." },
+  { num: "3", title: "Sell at the Right Price", desc: "Choose optimal window and maximise profit every season." },
 ];
 
-/* ─── Government Links ──────────────────────────────────────────────────────── */
 const GOV_LINKS = [
-  { label: "Agmarknet – APMC Mandi Prices", url: "https://agmarknet.gov.in" },
-  { label: "eNAM – National Agriculture Market", url: "https://www.enam.gov.in" },
-  { label: "Ministry of Agriculture & Farmers Welfare", url: "https://agricoop.gov.in" },
-  { label: "PM-Kisan Samman Nidhi", url: "https://pmkisan.gov.in" },
-  { label: "Fasal Bima Yojana (PMFBY)", url: "https://pmfby.gov.in" },
+  { label: "Agmarknet", url: "https://agmarknet.gov.in" },
+  { label: "eNAM Portal", url: "https://www.enam.gov.in" },
+  { label: "PM-KISAN", url: "https://pmkisan.gov.in" },
+  { label: "PMFBY", url: "https://pmfby.gov.in" },
+  { label: "DACFW", url: "https://agricoop.gov.in" },
 ];
+
+/* ─── Language Selector Component ──────────────────────────────────────────── */
+function LanguageSelector() {
+  const { language, setLanguage } = useContext(LanguageContext);
+  
+  return (
+    <select 
+      value={language} 
+      onChange={(e) => setLanguage(e.target.value)}
+      style={{
+        background: "rgba(255,255,255,0.9)",
+        border: "1px solid #c4ddb0",
+        borderRadius: "8px",
+        padding: "6px 12px",
+        fontSize: "14px",
+        fontWeight: 500,
+        color: "#1a2415",
+        cursor: "pointer",
+        outline: "none",
+        minWidth: "100px",
+      }}
+    >
+      <option value="en">English</option>
+      <option value="hi">हिन्दी</option>
+      <option value="mr">मराठी</option>
+    </select>
+  );
+}
 
 /* ─── Inline styles ─────────────────────────────────────────────────────────── */
 const landingCSS = `
@@ -45,7 +75,7 @@ const landingCSS = `
   @keyframes lp-ticker { from{transform:translateX(0)} to{transform:translateX(-50%)} }
   @keyframes lp-pulse  { 0%,100%{transform:scale(1);opacity:.7} 50%{transform:scale(1.5);opacity:0} }
 
-  /* ── Nav ── */
+  /* Nav */
   .lp-nav {
     position: fixed; top: 0; left: 0; right: 0; z-index: 200;
     height: 64px; display: flex; align-items: center; justify-content: space-between;
@@ -62,11 +92,11 @@ const landingCSS = `
     font-family: 'Inter', sans-serif; font-weight: 700; font-size: 17px;
     color: #1a2415; letter-spacing: -0.3px; text-decoration: none;
   }
-    .lp-logo img {
-  height: 38px;      /* control size here */
-  width: auto;
-  object-fit: contain;
-}
+  .lp-logo img {
+    height: 38px;
+    width: auto;
+    object-fit: contain;
+  }
   .lp-logo-box {
     width: 34px; height: 34px; border-radius: 8px;
     background: #5aad45;
@@ -93,7 +123,7 @@ const landingCSS = `
   }
   .lp-btn-solid:hover { background: #3d7a2e; transform: translateY(-1px); box-shadow: 0 4px 18px rgba(90,173,69,0.4); }
 
-  /* ── Hero ── */
+  /* Hero */
   .lp-hero {
     padding: 120px 80px 80px;
     max-width: 1400px; margin: 0 auto;
@@ -147,7 +177,7 @@ const landingCSS = `
   }
   .lp-cta-outline:hover { border-color: #5aad45; color: #3d7a2e; transform: translateY(-1px); }
 
-  /* ── Ticker ── */
+  /* Ticker */
   .lp-ticker-wrap {
     overflow: hidden;
     border-top: 1px solid #dce8d4; border-bottom: 1px solid #dce8d4;
@@ -164,7 +194,7 @@ const landingCSS = `
   }
   .lp-ticker-sep { color: #5aad45; font-size: 14px; }
 
-  /* ── Stats ── */
+  /* Stats */
   .lp-stats-section { padding: 64px 80px; max-width: 1400px; margin: 0 auto; }
   .lp-stats-grid {
     display: grid; grid-template-columns: repeat(4,1fr);
@@ -184,7 +214,7 @@ const landingCSS = `
   }
   .lp-stat-lbl { font-size: 13px; color: #8da080; font-weight: 500; }
 
-  /* ── Section header ── */
+  /* Section header */
   .lp-sec-header { text-align: center; margin-bottom: 56px; }
   .lp-sec-tag {
     display: inline-block; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
@@ -201,7 +231,7 @@ const landingCSS = `
     line-height: 1.65; font-weight: 400;
   }
 
-  /* ── Features ── */
+  /* Features */
   .lp-features-section { padding: 64px 80px; max-width: 1400px; margin: 0 auto; }
   .lp-features-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 20px; }
   .lp-feat-card {
@@ -222,7 +252,7 @@ const landingCSS = `
   .lp-feat-arrow { position: absolute; right: 28px; bottom: 28px; color: #c4ddb0; font-size: 18px; transition: all .25s; }
   .lp-feat-card:hover .lp-feat-arrow { color: #5aad45; transform: translate(3px,-3px); }
 
-  /* ── How it Works ── */
+  /* How it Works */
   .lp-how-section { padding: 64px 80px; max-width: 1400px; margin: 0 auto; }
   .lp-how-grid {
     display: grid; grid-template-columns: repeat(3,1fr); gap: 0;
@@ -245,7 +275,7 @@ const landingCSS = `
   .lp-step-title { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 16px; color: #1a2415; margin-bottom: 10px; letter-spacing: -0.2px; }
   .lp-step-desc { font-size: 14px; color: #4d6245; line-height: 1.6; font-weight: 400; }
 
-  /* ── CTA Banner ── */
+  /* CTA Banner */
   .lp-cta-section { padding: 64px 80px; max-width: 1400px; margin: 0 auto; }
   .lp-cta-box {
     background: #1e2720; border-radius: 20px; padding: 72px 80px; text-align: center;
@@ -265,7 +295,7 @@ const landingCSS = `
   .lp-cta-btns .lp-cta-outline { background: transparent; color: rgba(235,245,228,0.7); border-color: rgba(235,245,228,0.2); }
   .lp-cta-btns .lp-cta-outline:hover { border-color: #a8e063; color: #a8e063; }
 
-  /* ── Footer ── */
+  /* Footer */
   .lp-footer { border-top: 1px solid #dce8d4; background: #fff; }
   .lp-footer-feedback {
     padding: 64px 80px;
@@ -359,15 +389,31 @@ const landingCSS = `
 const tickerDupe = [...TICKER, ...TICKER];
 
 export default function Landing({ onLogin, onRegister }) {
+  const { t, language } = useContext(LanguageContext);
   const [stats, setStats] = useState(null);
   const [scrolled, setScrolled] = useState(false);
   const [feedback, setFeedback] = useState({ name: "", email: "", type: "suggestion", msg: "" });
   const [fbSent, setFbSent] = useState(false);
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  // Force re-render when language changes
+  const [langKey, setLangKey] = useState(0);
+  useEffect(() => {
+    setLangKey(prev => prev + 1);
+  }, [language]);
 
   useEffect(() => {
     const load = async () => {
-      try { const data = await apiGet("/api/stats/summary"); setStats(data); }
-      catch { setStats(null); }
+      setLoadingStats(true);
+      try { 
+        const data = await apiGet("/api/stats/summary"); 
+        setStats(data); 
+      } catch (err) {
+        console.log("Stats API not available, using defaults");
+        setStats(null);
+      } finally {
+        setLoadingStats(false);
+      }
     };
     load();
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -380,64 +426,68 @@ export default function Landing({ onLogin, onRegister }) {
     setFbSent(true);
   };
 
+  // Default stats when API is not available
+  const defaultStats = { recommendations: "7+", mandi_prices: "500+", crops: "9", users: "2+" };
+  const displayStats = loadingStats ? defaultStats : (stats || defaultStats);
+
   return (
-    <>
+    <div key={langKey}>
       <style>{landingCSS}</style>
       <div className="lp-root">
 
-        {/* ── Nav ── */}
+        {/* Nav */}
         <nav className={`lp-nav${scrolled ? " scrolled" : ""}`}>
           <div className="lp-logo">
-          <img src={logo} alt="AgniRakshak Logo" className="logo" />
-            <span className="lp-logo-text">AGRi<span>रक्षक</span></span>
+            <img src={logo} alt="AgriRakshak Logo" className="logo" />
+            <span className="lp-logo-text">AGRi<span>Rakshak</span></span>
           </div>
           <div className="lp-nav-actions">
-            <button className="lp-btn-ghost" onClick={onLogin}>Sign In</button>
-            <button className="lp-btn-solid" onClick={onRegister}>Get Started</button>
+            <LanguageSelector />
+            <button className="lp-btn-ghost" onClick={onLogin}>{t('signIn')}</button>
+            <button className="lp-btn-solid" onClick={onRegister}>{t('getStarted')}</button>
           </div>
         </nav>
 
-        {/* ── Hero ── */}
+        {/* Hero */}
         <section className="lp-hero">
           <div className="lp-hero-tag">
             <div className="lp-hero-dot" />
-            AI-Powered Farm Intelligence
+            {t('aiPowered')}
           </div>
           <h1 className="lp-hero-h1">
-            Grow smarter.<br />
-            <span className="lp-accent">Sell better.</span><br />
-            Earn more.
+            {t('growSmarter')}<br />
+            <span className="lp-accent">{t('sellBetter')}</span><br />
+            {t('earnMore')}
           </h1>
           <p className="lp-hero-sub">
-          Agriरक्षक combines weather forecasting, real-time mandi prices, and machine learning to
-            tell you exactly when to harvest and where to sell — maximising your profit every season.
+            {t('heroSubtitle')}
           </p>
           <div className="lp-hero-ctas">
-            <button className="lp-cta-primary" onClick={onRegister}>Start for free →</button>
-            <button className="lp-cta-outline" onClick={onLogin}>Farmer login</button>
+            <button className="lp-cta-primary" onClick={onRegister}>{t('startFree')}</button>
+            <button className="lp-cta-outline" onClick={onLogin}>{t('farmerLogin')}</button>
           </div>
         </section>
 
-        {/* ── Ticker ── */}
+        {/* Ticker */}
         <div className="lp-ticker-wrap">
           <div className="lp-ticker-inner">
-            {tickerDupe.map((t, i) => (
+            {tickerDupe.map((t_item, i) => (
               <span className="lp-ticker-item" key={i}>
-                <span className="lp-ticker-sep">✦</span>
-                {t}
+                <span className="lp-ticker-sep">*</span>
+                {t_item}
               </span>
             ))}
           </div>
         </div>
 
-        {/* ── Stats ── */}
+        {/* Stats */}
         <section className="lp-stats-section">
           <div className="lp-stats-grid">
             {[
-              { val: stats ? stats.recommendations : "7+", lbl: "Recommendations Served" },
-              { val: stats ? stats.mandi_prices : "500+", lbl: "Mandi Price Records" },
-              { val: stats ? stats.crops : "9", lbl: "Crops Supported" },
-              { val: stats ? stats.users : "2+", lbl: "Farmers Onboarded" },
+              { val: displayStats.recommendations, lbl: t('recommendationsServed') },
+              { val: displayStats.mandi_prices, lbl: t('mandiPriceRecords') },
+              { val: displayStats.crops, lbl: t('cropsSupported') },
+              { val: displayStats.users, lbl: t('farmersOnboarded') },
             ].map((s, i) => (
               <div className="lp-stat-item" key={i}>
                 <div className="lp-stat-num">{s.val}</div>
@@ -447,57 +497,57 @@ export default function Landing({ onLogin, onRegister }) {
           </div>
         </section>
 
-        {/* ── Features ── */}
+        {/* Features */}
         <section className="lp-features-section">
           <div className="lp-sec-header">
-            <div className="lp-sec-tag">Core Technology</div>
-            <h2 className="lp-sec-title">Everything you need to farm smarter</h2>
-            <p className="lp-sec-sub">Four pillars of intelligence working together to maximise your return every harvest.</p>
+            <div className="lp-sec-tag">{t('coreTechnology')}</div>
+            <h2 className="lp-sec-title">{t('everythingFarming')}</h2>
+            <p className="lp-sec-sub">{t('featuresSubtitle')}</p>
           </div>
           <div className="lp-features-grid">
             {FEATURES.map((f, i) => (
               <div className="lp-feat-card" key={i}>
                 <div className="lp-feat-badge">{f.badge}</div>
-                <div className="lp-feat-title">{f.title}</div>
-                <div className="lp-feat-desc">{f.desc}</div>
-                <div className="lp-feat-arrow">↗</div>
+                <div className="lp-feat-title">{t('weatherIntelligence')}</div>
+                <div className="lp-feat-desc">{t('weatherDesc')}</div>
+                <div className="lp-feat-arrow"></div>
               </div>
             ))}
           </div>
         </section>
 
-        {/* ── How It Works ── */}
+        {/* How It Works */}
         <section className="lp-how-section">
           <div className="lp-sec-header">
-            <div className="lp-sec-tag">Simple Process</div>
-            <h2 className="lp-sec-title">Three steps to higher profit</h2>
-            <p className="lp-sec-sub">From sign-up to your first AI-powered sell recommendation in minutes.</p>
+            <div className="lp-sec-tag">{t('simpleProcess')}</div>
+            <h2 className="lp-sec-title">{t('threeSteps')}</h2>
+            <p className="lp-sec-sub">{t('howSubtitle')}</p>
           </div>
           <div className="lp-how-grid">
             {STEPS.map((s, i) => (
               <div className="lp-how-step" key={i}>
                 <div className="lp-step-num">{s.num}</div>
-                <div className="lp-step-title">{s.title}</div>
-                <div className="lp-step-desc">{s.desc}</div>
+                <div className="lp-step-title">{t('connectFarm')}</div>
+                <div className="lp-step-desc">{t('connectFarmDesc')}</div>
               </div>
             ))}
           </div>
         </section>
 
-        {/* ── CTA Banner ── */}
+        {/* CTA Banner */}
         <section className="lp-cta-section">
           <div className="lp-cta-box">
-            <div className="lp-sec-tag" style={{ marginBottom: 16 }}>Join the Beta</div>
-            <h2 className="lp-cta-title">Ready to earn more from every harvest?</h2>
-            <p className="lp-cta-sub">Join farmers already using Agriरक्षक to make data-driven decisions. Free during beta.</p>
+            <div className="lp-sec-tag" style={{ marginBottom: 16 }}>{t('joinBeta')}</div>
+            <h2 className="lp-cta-title">{t('ctaTitle')}</h2>
+            <p className="lp-cta-sub">{t('ctaSubtitle')}</p>
             <div className="lp-cta-btns">
-              <button className="lp-cta-primary" onClick={onRegister}>Create free account →</button>
-              <button className="lp-cta-outline" onClick={onLogin}>Farmer login</button>
+              <button className="lp-cta-primary" onClick={onRegister}>{t('createAccount')}</button>
+              <button className="lp-cta-outline" onClick={onLogin}>{t('farmerLogin')}</button>
             </div>
           </div>
         </section>
 
-        {/* ── Footer ── */}
+        {/* Footer */}
         <footer className="lp-footer">
 
           {/* Feedback + Quick Links */}
@@ -505,27 +555,27 @@ export default function Landing({ onLogin, onRegister }) {
             <div className="lp-footer-feedback-inner">
               {/* Feedback form */}
               <div>
-                <div className="lp-sec-tag" style={{ marginBottom: 14 }}>Help & Feedback</div>
-                <div className="lp-fb-title">Share your thoughts</div>
-                <p className="lp-fb-sub">Help us build the best tool for Indian farmers. Every piece of feedback shapes Agriरक्षक's future.</p>
+                <div className="lp-sec-tag" style={{ marginBottom: 14 }}>{t('helpFeedback')}</div>
+                <div className="lp-fb-title">{t('shareThoughts')}</div>
+                <p className="lp-fb-sub">{t('feedbackSubtitle')}</p>
                 {fbSent ? (
-                  <div className="lp-fb-sent">✓ Thank you! Your feedback has been received.</div>
+                  <div className="lp-fb-sent">{t('thankYouFeedback')}</div>
                 ) : (
                   <div className="lp-fb-form">
-                    <input className="lp-fb-input" placeholder="Your name" value={feedback.name}
+                    <input className="lp-fb-input" placeholder={t('yourName')} value={feedback.name}
                       onChange={e => setFeedback({ ...feedback, name: e.target.value })} />
-                    <input className="lp-fb-input" placeholder="Email address (optional)" value={feedback.email}
+                    <input className="lp-fb-input" placeholder={t('emailOptional')} value={feedback.email}
                       onChange={e => setFeedback({ ...feedback, email: e.target.value })} />
                     <select className="lp-fb-select" value={feedback.type}
                       onChange={e => setFeedback({ ...feedback, type: e.target.value })}>
-                      <option value="suggestion">💡 Feature suggestion</option>
-                      <option value="bug">🐛 Report a bug</option>
-                      <option value="mandi">🏪 Missing mandi / crop</option>
-                      <option value="other">💬 General feedback</option>
+                      <option value="suggestion">{t('featureSuggestion')}</option>
+                      <option value="bug">{t('bugReport')}</option>
+                      <option value="mandi">{t('missingMandi')}</option>
+                      <option value="other">{t('generalFeedback')}</option>
                     </select>
-                    <textarea className="lp-fb-textarea" placeholder="Tell us what you think, what's missing, or what you'd like to see..."
+                    <textarea className="lp-fb-textarea" placeholder={t('tellUs')}
                       value={feedback.msg} onChange={e => setFeedback({ ...feedback, msg: e.target.value })} />
-                    <button className="lp-fb-btn" onClick={handleFeedback}>Send Feedback →</button>
+                    <button className="lp-fb-btn" onClick={handleFeedback}>{t('sendFeedback')}</button>
                   </div>
                 )}
               </div>
@@ -533,27 +583,27 @@ export default function Landing({ onLogin, onRegister }) {
               {/* Quick links */}
               <div className="lp-ql-section">
                 <div>
-                  <div className="lp-ql-block-title">🏛 Government Portals</div>
+                  <div className="lp-ql-block-title">{t('govtPortals')}</div>
                   <div className="lp-ql-list">
                     {GOV_LINKS.map((l, i) => (
                       <a key={i} className="lp-ql-link" href={l.url} target="_blank" rel="noopener noreferrer">
-                        <span className="lp-ql-link-icon">🔗</span>
+                        <span className="lp-ql-link-icon"></span>
                         {l.label}
-                        <span className="lp-ql-link-ext">↗</span>
+                        <span className="lp-ql-link-ext"></span>
                       </a>
                     ))}
                   </div>
                 </div>
                 <div>
-                  <div className="lp-ql-block-title">📱 Download App</div>
+                  <div className="lp-ql-block-title">{t('downloadApp')}</div>
                   <div className="lp-ql-list">
                     <a className="lp-ql-link" href="#" target="_blank" rel="noopener noreferrer">
-                      <span className="lp-ql-link-icon">▶</span> Get on Google Play
-                      <span className="lp-ql-link-ext">↗</span>
+                      <span className="lp-ql-link-icon"></span> {t('getPlayStore')}
+                      <span className="lp-ql-link-ext"></span>
                     </a>
                     <a className="lp-ql-link" href="#" target="_blank" rel="noopener noreferrer">
-                      <span className="lp-ql-link-icon">🍎</span> Download on App Store
-                      <span className="lp-ql-link-ext">↗</span>
+                      <span className="lp-ql-link-icon"></span> {t('getAppStore')}
+                      <span className="lp-ql-link-ext"></span>
                     </a>
                   </div>
                 </div>
@@ -567,15 +617,14 @@ export default function Landing({ onLogin, onRegister }) {
               {/* Brand */}
               <div>
                 <div className="lp-logo">
-                  <div className="lp-logo-box">AC</div>
-                  <span className="lp-logo-text">AGRi<span>रक्षक</span></span>
+                  <div className="lp-logo-box">AR</div>
+                  <span className="lp-logo-text">AGRi<span>Rakshak</span></span>
                 </div>
                 <p className="lp-footer-brand-desc">
-                  AI-powered farm intelligence for Indian agriculture. Real-time mandi prices, weather forecasting,
-                  and machine learning — all in one platform built for farmers.
+                  {t('heroSubtitle')}
                 </p>
                 <div className="lp-footer-socials">
-                  {["𝕏", "in", "f", "▶"].map((s, i) => (
+                  {["X", "in", "f", "Y"].map((s, i) => (
                     <a key={i} className="lp-social-btn" href="#" target="_blank" rel="noopener noreferrer">{s}</a>
                   ))}
                 </div>
@@ -583,16 +632,28 @@ export default function Landing({ onLogin, onRegister }) {
 
               {/* Product */}
               <div>
-                <div className="lp-footer-col-title">Product</div>
-                {["Features", "How It Works", "Supported Crops", "Pricing", "Changelog"].map((l, i) => (
+                <div className="lp-footer-col-title">{t('product')}</div>
+                {[
+                  t('features'), 
+                  t('howItWorks'), 
+                  t('supportedCrops'), 
+                  t('pricing'), 
+                  t('changelog')
+                ].map((l, i) => (
                   <a key={i} className="lp-footer-link" href="#">{l}</a>
                 ))}
               </div>
 
               {/* Resources */}
               <div>
-                <div className="lp-footer-col-title">Resources</div>
-                {["Documentation", "API Access", "Blog", "FAQs", "Contact Support"].map((l, i) => (
+                <div className="lp-footer-col-title">{t('resources')}</div>
+                {[
+                  t('documentation'), 
+                  t('apiAccess'), 
+                  t('blog'), 
+                  t('faqs'), 
+                  t('contactSupport')
+                ].map((l, i) => (
                   <a key={i} className="lp-footer-link" href="#">{l}</a>
                 ))}
               </div>
@@ -600,15 +661,9 @@ export default function Landing({ onLogin, onRegister }) {
               {/* Government Sites */}
               <div>
                 <div className="lp-footer-col-title">Gov Sites</div>
-                {[
-                  { label: "Agmarknet", url: "https://agmarknet.gov.in" },
-                  { label: "eNAM Portal", url: "https://www.enam.gov.in" },
-                  { label: "PM-KISAN", url: "https://pmkisan.gov.in" },
-                  { label: "PMFBY", url: "https://pmfby.gov.in" },
-                  { label: "DACFW", url: "https://agricoop.gov.in" },
-                ].map((l, i) => (
+                {GOV_LINKS.map((l, i) => (
                   <a key={i} className="lp-footer-link lp-footer-link-ext" href={l.url} target="_blank" rel="noopener noreferrer">
-                    {l.label} <span className="lp-ext-icon">↗</span>
+                    {l.label} <span className="lp-ext-icon"></span>
                   </a>
                 ))}
               </div>
@@ -619,8 +674,8 @@ export default function Landing({ onLogin, onRegister }) {
           <div style={{ borderTop: "1px solid #dce8d4" }}>
             <div className="lp-footer-bottom">
               <div className="lp-footer-copy">
-                © 2026 Agriरक्षक. Built for Indian farmers. · Data sourced from{" "}
-                <a href="https://agmarknet.gov.in" target="_blank" rel="noopener noreferrer">Agmarknet</a> &{" "}
+                2026 AgriRakshak. Built for Indian farmers. Data sourced from{" "}
+                <a href="https://agmarknet.gov.in" target="_blank" rel="noopener noreferrer">Agmarknet</a> and{" "}
                 <a href="https://www.enam.gov.in" target="_blank" rel="noopener noreferrer">eNAM</a>
               </div>
               <div className="lp-footer-bottom-links">
@@ -632,6 +687,6 @@ export default function Landing({ onLogin, onRegister }) {
           </div>
         </footer>
       </div>
-    </>
+    </div>
   );
 }

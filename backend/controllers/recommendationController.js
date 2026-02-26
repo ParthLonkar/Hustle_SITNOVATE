@@ -5,7 +5,7 @@ import { calculateProfit } from "../services/profitCalculator.js";
 import { fetchMandiPrices, normalizeMandiPrices } from "../services/externalMandiService.js";
 import { getRankedActions } from "../services/preservationService.js";
 
-const ML_SERVICE_URL = process.env.ML_SERVICE_URL || "";
+const ML_SERVICE_URL = process.env.ML_SERVICE_URL || "http://localhost:8000";
 
 const tryMlRecommendation = async ({ cropId, region, quantity, soil, storage, weather, mandiPrices }) => {
   if (!ML_SERVICE_URL) return null;
