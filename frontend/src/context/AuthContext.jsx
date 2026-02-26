@@ -5,8 +5,11 @@ export const useAuth = () => useContext(AuthContext);
 
 const API_BASE = import.meta.env.VITE_API_BASE || "";
 
+const normalizePath = (path) => path.startsWith("/api") ? path : `/api${path}`;
+
 const apiPost = async (path, body) => {
-  const res = await fetch(`${API_BASE}${path}`, {
+  const normalizedPath = normalizePath(path);
+  const res = await fetch(`${API_BASE}${normalizedPath}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body)
@@ -20,7 +23,8 @@ const apiPost = async (path, body) => {
 };
 
 const apiGet = async (path, token) => {
-  const res = await fetch(`${API_BASE}${path}`, {
+  const normalizedPath = normalizePath(path);
+  const res = await fetch(`${API_BASE}${normalizedPath}`, {
     method: "GET",
     headers: token ? { Authorization: `Bearer ${token}` } : {}
   });

@@ -12,7 +12,9 @@ const parseJson = async (res) => {
 const authHeader = (token) => (token ? { Authorization: `Bearer ${token}` } : {});
 
 export const apiGet = async (path, token) => {
-  const res = await fetch(`${API_BASE}${path}`, {
+  // Ensure path starts with /api
+  const normalizedPath = path.startsWith("/api") ? path : `/api${path}`;
+  const res = await fetch(`${API_BASE}${normalizedPath}`, {
     method: "GET",
     headers: { ...authHeader(token) },
   });
@@ -20,7 +22,9 @@ export const apiGet = async (path, token) => {
 };
 
 export const apiPost = async (path, body, token) => {
-  const res = await fetch(`${API_BASE}${path}`, {
+  // Ensure path starts with /api
+  const normalizedPath = path.startsWith("/api") ? path : `/api${path}`;
+  const res = await fetch(`${API_BASE}${normalizedPath}`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeader(token) },
     body: JSON.stringify(body),

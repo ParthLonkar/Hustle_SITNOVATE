@@ -443,7 +443,7 @@ export default function Landing({ onLogin, onRegister }) {
             <h2 className="lp-cta-title">{t('ctaTitle')}</h2>
             <p className="lp-cta-sub">{t('ctaSubtitle')}</p>
             <div className="lp-cta-btns">
-              <button className="lp-cta-primary" onClick={onRegister}>{t('createAccount')}</button>
+              <button className="lp-cta-primary" onClick={onRegister}>{t('createAccountCta')}</button>
               <button className="lp-cta-outline" onClick={onLogin}>{t('farmerLogin')}</button>
             </div>
           </div>
