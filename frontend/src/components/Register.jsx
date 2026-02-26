@@ -24,7 +24,7 @@ export default function Register({ onSuccess, onSwitch }) {
   return (
     <div className="auth-wrap">
       <div className="auth-left">
-        <div className="auth-left-logo">AGRiCHAIN</div>
+        <div className="auth-left-logo">Agri रक्षक</div>
         <h2>Join thousands of farmers earning more.</h2>
         <p>Create your account and get AI-powered market intelligence tailored to your region and crops.</p>
       </div>
