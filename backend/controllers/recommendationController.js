@@ -36,7 +36,7 @@ const tryMlRecommendation = async ({ cropId, region, quantity, soil, storage, we
 export const simulateSpoilage = async (req, res) => {
   try {
     const { crop_type, quantity, initial_quality, storage_temp, storage_humidity, transit_hours, weather } = req.body;
-    
+
     // Try ML service first
     if (ML_SERVICE_URL) {
       try {
@@ -53,7 +53,6 @@ export const simulateSpoilage = async (req, res) => {
             weather: weather || []
           })
         });
-
         if (mlResponse.ok) {
           const data = await mlResponse.json();
           return res.json(data);
@@ -63,71 +62,76 @@ export const simulateSpoilage = async (req, res) => {
       }
     }
 
-    // Fallback spoilage simulation when ML service is not available
-    const temp = Number(storage_temp) || 20;
-    const humidity = Number(storage_humidity) || 60;
-    const transit = Number(transit_hours) || 0;
-    const initQuality = Number(initial_quality) || 1.0;
-    
-    const tempImpact = temp > 30 ? 25 : temp > 25 ? 15 : temp < 10 ? 5 : 10;
-    const humidityImpact = humidity > 80 ? 25 : humidity > 70 ? 15 : humidity < 40 ? 5 : 10;
-    const transitImpact = transit > 12 ? 20 : transit > 6 ? 12 : transit > 3 ? 6 : 2;
-    
+    // Fallback simulation
+    const temp        = Number(storage_temp)      || 20;
+    const humidity    = Number(storage_humidity)  || 60;
+    const transit     = Number(transit_hours)     || 0;
+    const initQuality = Number(initial_quality)   || 1.0;
+
+    const tempImpact     = temp     > 30 ? 25 : temp     > 25 ? 15 : temp < 10     ?  5 : 10;
+    const humidityImpact = humidity > 80 ? 25 : humidity > 70 ? 15 : humidity < 40 ?  5 : 10;
+    const transitImpact  = transit  > 12 ? 20 : transit  >  6 ? 12 : transit > 3   ?  6 :  2;
+
     let weatherImpact = 0;
     if (weather && weather.length > 0) {
       weather.forEach(w => {
         if (w.temperature > 30) weatherImpact += 10;
-        if (w.humidity > 80) weatherImpact += 8;
-        if (w.rainfall > 20) weatherImpact += 7;
+        if (w.humidity    > 80) weatherImpact +=  8;
+        if (w.rainfall    > 20) weatherImpact +=  7;
       });
       weatherImpact = Math.min(20, weatherImpact);
     }
-    
+
     const totalImpact = tempImpact + humidityImpact + transitImpact + weatherImpact;
-    const dailyRate = totalImpact / 100;
-    
+    const dailyRate   = totalImpact / 7;
+
     const simulationResults = [];
-    let remainingQuality = initQuality * 100;
-    let cumulativeSpoilage = 0;
-    
+    let cumulativeSpoilage  = 0;
+
     for (let day = 1; day <= 7; day++) {
-      const dailySpoilage = dailyRate * (1 + (day * 0.1));
-      cumulativeSpoilage = Math.min(100, cumulativeSpoilage + dailySpoilage);
-      remainingQuality = Math.max(0, 100 - cumulativeSpoilage);
-      
+      const dailySpoilage = dailyRate * (1 + (day - 1) * 0.05) * (2 - initQuality);
+      cumulativeSpoilage  = Math.min(100, cumulativeSpoilage + dailySpoilage);
+      const remainingQuality = Math.max(0, 100 - cumulativeSpoilage);
+
       simulationResults.push({
         day,
-        spoilage_rate: Math.round(dailySpoilage * 10) / 10,
+        spoilage_rate:       Math.round(dailySpoilage     * 10) / 10,
         cumulative_spoilage: Math.round(cumulativeSpoilage * 10) / 10,
-        remaining_quality: Math.round(remainingQuality * 10) / 10
+        remaining_quality:   Math.round(remainingQuality   * 10) / 10
       });
     }
-    
+
     const finalSpoilage = Math.round(cumulativeSpoilage * 10) / 10;
-    const riskLevel = finalSpoilage > 50 ? "HIGH" : finalSpoilage > 25 ? "MEDIUM" : "LOW";
-    const recommendation = finalSpoilage > 50 
-      ? "Sell immediately to minimize losses" 
-      : finalSpoilage > 25 
-        ? "Sell within 2-3 days" 
-        : "Quality can be maintained for a week with proper storage";
-    
+    const riskLevel     = finalSpoilage > 50 ? "CRITICAL"
+                        : finalSpoilage > 30 ? "HIGH"
+                        : finalSpoilage > 15 ? "MEDIUM"
+                        : "LOW";
+    const recommendation = finalSpoilage > 50
+      ? "Sell immediately to minimize losses"
+      : finalSpoilage > 30
+        ? "Sell within 2-3 days"
+        : finalSpoilage > 15
+          ? "Monitor closely, sell within 5 days"
+          : "Quality can be maintained for a week with proper storage";
+
     return res.json({
-      simulation_results: simulationResults,
+      simulation_results:    simulationResults,
       final_spoilage_percent: finalSpoilage,
-      risk_level: riskLevel,
+      risk_level:            riskLevel,
       recommendation,
       factors: {
         temperature_impact: tempImpact,
-        humidity_impact: humidityImpact,
-        transit_impact: transitImpact,
-        weather_impact: weatherImpact
+        humidity_impact:    humidityImpact,
+        transit_impact:     transitImpact,
+        weather_impact:     weatherImpact
       },
       optimal_conditions: {
-        suggested_temp: "4-10C",
+        suggested_temp:    "4-10C",
         suggested_humidity: "40-60%",
-        max_transit_hours: 6
+        max_transit_hours:  6
       }
     });
+
   } catch (err) {
     console.error("Spoilage simulation error:", err);
     return res.status(500).json({ message: "Failed to simulate spoilage" });
