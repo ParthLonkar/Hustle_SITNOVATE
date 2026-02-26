@@ -59,3 +59,11 @@ CREATE INDEX IF NOT EXISTS idx_users_role_region ON users(role, region);
 CREATE INDEX IF NOT EXISTS idx_mandi_prices_crop_date ON mandi_prices(crop_id, price_date);
 CREATE INDEX IF NOT EXISTS idx_weather_region_date ON weather_data(region, forecast_date);
 CREATE INDEX IF NOT EXISTS idx_recommendations_user ON recommendations(user_id);
+-- Preservation actions table
+CREATE TABLE IF NOT EXISTS preservation_actions (
+  id BIGSERIAL PRIMARY KEY,
+  action_name TEXT NOT NULL,
+  description TEXT NOT NULL,
+  cost_score INT NOT NULL CHECK (cost_score BETWEEN 1 AND 5),
+  effectiveness_score INT NOT NULL CHECK (effectiveness_score BETWEEN 1 AND 5)
+);

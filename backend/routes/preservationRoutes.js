@@ -1,11 +1,11 @@
 ﻿import { Router } from "express";
 import authMiddleware from "../middleware/authMiddleware.js";
 import roleMiddleware from "../middleware/roleMiddleware.js";
-import { listMandiPrices, createMandiPrice } from "../controllers/marketController.js";
+import { listActions, createAction } from "../controllers/preservationController.js";
 
 const router = Router();
 
-router.get("/", listMandiPrices);
-router.post("/", authMiddleware, roleMiddleware(["admin", "trader"]), createMandiPrice);
+router.get("/", listActions);
+router.post("/", authMiddleware, roleMiddleware(["admin"]), createAction);
 
 export default router;

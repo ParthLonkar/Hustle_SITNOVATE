@@ -1,4 +1,21 @@
-﻿export default function Landing({ onLogin, onRegister }) {
+﻿import { useEffect, useState } from "react";
+import { apiGet } from "../services/api";
+
+export default function Landing({ onLogin, onRegister }) {
+  const [stats, setStats] = useState(null);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await apiGet("/api/stats/summary");
+        setStats(data);
+      } catch {
+        setStats(null);
+      }
+    };
+    load();
+  }, []);
+
   return (
     <div className="landing">
       <div className="land-bg" />
@@ -23,10 +40,10 @@
         </div>
       </div>
       <div className="land-stats">
-        <div className="stat"><div className="stat-num">Rs 18K+</div><div className="stat-lbl">Avg. profit increase/season</div></div>
-        <div className="stat"><div className="stat-num">240+</div><div className="stat-lbl">Mandis tracked live</div></div>
-        <div className="stat"><div className="stat-num">92%</div><div className="stat-lbl">Price forecast accuracy</div></div>
-        <div className="stat"><div className="stat-num">12K+</div><div className="stat-lbl">Farmers onboarded</div></div>
+        <div className="stat"><div className="stat-num">{stats ? stats.recommendations : "--"}</div><div className="stat-lbl">Recommendations served</div></div>
+        <div className="stat"><div className="stat-num">{stats ? stats.mandi_prices : "--"}</div><div className="stat-lbl">Mandi price records</div></div>
+        <div className="stat"><div className="stat-num">{stats ? stats.crops : "--"}</div><div className="stat-lbl">Crops supported</div></div>
+        <div className="stat"><div className="stat-num">{stats ? stats.users : "--"}</div><div className="stat-lbl">Users onboarded</div></div>
       </div>
       <div className="land-features">
         {[

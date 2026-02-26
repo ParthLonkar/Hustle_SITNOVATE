@@ -1,4 +1,4 @@
-﻿import { createContext, useContext, useState } from "react";
+﻿import { createContext, useContext, useEffect, useState } from "react";
 
 const AuthContext = createContext(null);
 export const useAuth = () => useContext(AuthContext);
@@ -19,12 +19,26 @@ const apiPost = async (path, body) => {
   return data;
 };
 
+const apiGet = async (path, token) => {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: "GET",
+    headers: token ? { Authorization: `Bearer ${token}` } : {}
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const msg = data?.message || "Request failed.";
+    throw new Error(msg);
+  }
+  return data;
+};
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     const raw = localStorage.getItem("ag_user");
     return raw ? JSON.parse(raw) : null;
   });
   const [token, setToken] = useState(() => localStorage.getItem("ag_token"));
+  const [loading, setLoading] = useState(false);
 
   const setSession = (nextUser, nextToken) => {
     setUser(nextUser);
@@ -37,6 +51,24 @@ export function AuthProvider({ children }) {
       localStorage.removeItem("ag_token");
     }
   };
+
+  useEffect(() => {
+    const refresh = async () => {
+      if (!token) return;
+      setLoading(true);
+      try {
+        const data = await apiGet("/api/farmer/me", token);
+        if (data?.user) {
+          setSession(data.user, token);
+        }
+      } catch (err) {
+        setSession(null, null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    refresh();
+  }, [token]);
 
   const login = async (email, password) => {
     const data = await apiPost("/api/auth/login", { email, password });
@@ -53,9 +85,8 @@ export function AuthProvider({ children }) {
   const logout = () => setSession(null, null);
 
   return (
-    <AuthContext.Provider value={{ user, token, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );
 }
-

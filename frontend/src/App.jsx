@@ -9,16 +9,21 @@ import FarmerHome from "./components/FarmerHome";
 import AdminDashboard from "./components/AdminDashboard";
 
 function App() {
-  const [page, setPage] = useState("landing"); // landing | login | register | app
+  const [page, setPage] = useState("landing");
   const [tab, setTab] = useState("home");
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
 
   useEffect(() => {
-    if (!user && page === "app") {
-      const timer = setTimeout(() => setPage("landing"), 0);
-      return () => clearTimeout(timer);
+    if (user && page !== "app") {
+      setPage("app");
     }
   }, [user, page]);
+
+  useEffect(() => {
+    if (!user && page === "app" && !loading) {
+      setPage("landing");
+    }
+  }, [user, page, loading]);
 
   if (page === "landing") return <Landing onLogin={() => setPage("login")} onRegister={() => setPage("register")} />;
   if (page === "login") return <Login onSuccess={() => { setTab("home"); setPage("app"); }} onSwitch={() => setPage("register")} />;
