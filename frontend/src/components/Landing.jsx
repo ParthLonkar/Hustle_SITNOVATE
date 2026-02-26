@@ -1,5 +1,6 @@
 ﻿import { useEffect, useState } from "react";
 import { apiGet } from "../services/api";
+import logo from "../assets/AgriRakshak.png";
 
 /* ─── Ticker items ─────────────────────────────────────────────────────────── */
 const TICKER = ["7-Day Weather Forecast", "Real-Time Mandi Prices", "ML Harvest Timing", "Transport Cost Analysis", "Explainable AI Insights", "Spoilage Risk Alerts", "Multi-Mandi Comparison", "Seasonal Profit Reports"];
@@ -61,6 +62,11 @@ const landingCSS = `
     font-family: 'Inter', sans-serif; font-weight: 700; font-size: 17px;
     color: #1a2415; letter-spacing: -0.3px; text-decoration: none;
   }
+    .lp-logo img {
+  height: 38px;      /* control size here */
+  width: auto;
+  object-fit: contain;
+}
   .lp-logo-box {
     width: 34px; height: 34px; border-radius: 8px;
     background: #5aad45;
@@ -382,8 +388,8 @@ export default function Landing({ onLogin, onRegister }) {
         {/* ── Nav ── */}
         <nav className={`lp-nav${scrolled ? " scrolled" : ""}`}>
           <div className="lp-logo">
-            <div className="lp-logo-box">AC</div>
-            <span className="lp-logo-text">AGRi<span>CHAIN</span></span>
+          <img src={logo} alt="AgniRakshak Logo" className="logo" />
+            <span className="lp-logo-text">AGRi<span>रक्षक</span></span>
           </div>
           <div className="lp-nav-actions">
             <button className="lp-btn-ghost" onClick={onLogin}>Sign In</button>
@@ -403,7 +409,7 @@ export default function Landing({ onLogin, onRegister }) {
             Earn more.
           </h1>
           <p className="lp-hero-sub">
-          Agri रक्षक combines weather forecasting, real-time mandi prices, and machine learning to
+          Agriरक्षक combines weather forecasting, real-time mandi prices, and machine learning to
             tell you exactly when to harvest and where to sell — maximising your profit every season.
           </p>
           <div className="lp-hero-ctas">
@@ -483,7 +489,7 @@ export default function Landing({ onLogin, onRegister }) {
           <div className="lp-cta-box">
             <div className="lp-sec-tag" style={{ marginBottom: 16 }}>Join the Beta</div>
             <h2 className="lp-cta-title">Ready to earn more from every harvest?</h2>
-            <p className="lp-cta-sub">Join farmers already using Agri रक्षक to make data-driven decisions. Free during beta.</p>
+            <p className="lp-cta-sub">Join farmers already using Agriरक्षक to make data-driven decisions. Free during beta.</p>
             <div className="lp-cta-btns">
               <button className="lp-cta-primary" onClick={onRegister}>Create free account →</button>
               <button className="lp-cta-outline" onClick={onLogin}>Farmer login</button>
@@ -501,7 +507,7 @@ export default function Landing({ onLogin, onRegister }) {
               <div>
                 <div className="lp-sec-tag" style={{ marginBottom: 14 }}>Help & Feedback</div>
                 <div className="lp-fb-title">Share your thoughts</div>
-                <p className="lp-fb-sub">Help us build the best tool for Indian farmers. Every piece of feedback shapes Agri रक्षक's future.</p>
+                <p className="lp-fb-sub">Help us build the best tool for Indian farmers. Every piece of feedback shapes Agriरक्षक's future.</p>
                 {fbSent ? (
                   <div className="lp-fb-sent">✓ Thank you! Your feedback has been received.</div>
                 ) : (
@@ -562,7 +568,7 @@ export default function Landing({ onLogin, onRegister }) {
               <div>
                 <div className="lp-logo">
                   <div className="lp-logo-box">AC</div>
-                  <span className="lp-logo-text">AGRi<span>CHAIN</span></span>
+                  <span className="lp-logo-text">AGRi<span>रक्षक</span></span>
                 </div>
                 <p className="lp-footer-brand-desc">
                   AI-powered farm intelligence for Indian agriculture. Real-time mandi prices, weather forecasting,
@@ -613,7 +619,7 @@ export default function Landing({ onLogin, onRegister }) {
           <div style={{ borderTop: "1px solid #dce8d4" }}>
             <div className="lp-footer-bottom">
               <div className="lp-footer-copy">
-                © 2026 Agri रक्षक. Built for Indian farmers. · Data sourced from{" "}
+                © 2026 Agriरक्षक. Built for Indian farmers. · Data sourced from{" "}
                 <a href="https://agmarknet.gov.in" target="_blank" rel="noopener noreferrer">Agmarknet</a> &{" "}
                 <a href="https://www.enam.gov.in" target="_blank" rel="noopener noreferrer">eNAM</a>
               </div>

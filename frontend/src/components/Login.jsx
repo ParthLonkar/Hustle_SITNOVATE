@@ -1,5 +1,6 @@
 ﻿import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import logo from "../assets/AgriRakshak.png";
 
 export default function Login({ onSuccess, onSwitch }) {
   const { login } = useAuth();
@@ -36,7 +37,7 @@ export default function Login({ onSuccess, onSwitch }) {
             display: "flex", alignItems: "center", justifyContent: "center",
             fontFamily: "var(--font-head)", fontWeight: 800, fontSize: 14, color: "#4ade80",
           }}>AC</div>
-          Agri रक्षक
+          Agriरक्षक
         </div>
 
         <h2>Welcome<br />back.</h2>
@@ -98,7 +99,7 @@ export default function Login({ onSuccess, onSwitch }) {
               fontFamily: "var(--font-head)", fontWeight: 800, fontSize: 10, color: "#4ade80",
             }}>AC</div>
             <span style={{ fontFamily: "var(--font-head)", fontWeight: 800, fontSize: 14, color: "var(--txt)" }}>
-              AGRi<span style={{ color: "var(--g)" }}>CHAIN</span>
+              AGRi<span style={{ color: "var(--g)" }}>रक्षक</span>
             </span>
           </div>
 

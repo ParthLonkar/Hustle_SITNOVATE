@@ -10,7 +10,7 @@ export default function Topbar({ onNav, tab }) {
           <div className="topbar-logo-ring" />
           <div className="topbar-logo-icon">AC</div>
         </div>
-        <span className="topbar-logo-text">AGRi<span>CHAIN</span></span>
+        <span className="topbar-logo-text">AGRi<span>रक्षक</span></span>
       </div>
 
       <div className="topbar-right">
