@@ -1,47 +1,84 @@
 ﻿import { useState } from "react";
-import { useAuth } from "../context/AuthContext";
 
-export default function Register({ onSuccess, onSwitch }) {
-  const { register } = useAuth();
-  const [form, setForm] = useState({ name: "", email: "", region: "", role: "farmer", password: "" });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+const css = `
+  /* reuses .auth-root / .auth-box / .field / .auth-btn from Login */
+  .role-grid { display:grid; grid-template-columns:1fr 1fr; gap:.6rem; margin-bottom:1.1rem; }
+  .role-card {
+    padding:.7rem; border-radius:10px; text-align:center; cursor:pointer;
+    background:rgba(255,255,255,.04); border:1px solid var(--border);
+    transition:all .2s; font-size:.82rem;
+  }
+  .role-card.selected { background:rgba(76,175,80,.12); border-color:rgba(76,175,80,.4); color:var(--leaf-bright); }
+  .role-card:hover { border-color:rgba(76,175,80,.3); }
+  .role-icon { font-size:1.4rem; margin-bottom:.25rem; }
+`;
 
-  const handleSubmit = async () => {
-    setError("");
-    setLoading(true);
-    try {
-      await register(form);
-      onSuccess();
-    } catch (err) {
-      setError(err?.message || "Registration failed.");
-    } finally {
-      setLoading(false);
-    }
+const ROLES = [
+  { icon: "👨‍🌾", label: "Farmer"  },
+  { icon: "🏪",  label: "Trader"  },
+  { icon: "📦",  label: "Storage" },
+  { icon: "🚚",  label: "Transporter" },
+];
+
+export default function Register({ onRegister, onSwitch }) {
+  const [name,  setName]  = useState("");
+  const [email, setEmail] = useState("");
+  const [pass,  setPass]  = useState("");
+  const [role,  setRole]  = useState("Farmer");
+
+  const handle = (e) => {
+    e.preventDefault();
+    onRegister?.({ name, email, password: pass, role });
   };
 
   return (
-    <div className="auth-wrap">
-      <div className="auth-left">
-        <div className="auth-left-logo">AGRiCHAIN</div>
-        <h2>Join thousands of farmers earning more.</h2>
-        <p>Create your account and get AI-powered market intelligence tailored to your region and crops.</p>
-      </div>
-      <div className="auth-right">
-        <div className="auth-card">
-          <h3>Create account</h3>
-          <p>Get started in under a minute</p>
-          <div className="field"><label>Full Name</label><input value={form.name} onChange={e => set("name", e.target.value)} placeholder="Ramesh Patil" /></div>
-          <div className="field"><label>Email</label><input value={form.email} onChange={e => set("email", e.target.value)} placeholder="you@example.com" /></div>
-          <div className="field"><label>Region (State)</label><input value={form.region} onChange={e => set("region", e.target.value)} placeholder="Maharashtra" /></div>
-          <div className="field"><label>Role</label><select value={form.role} onChange={e => set("role", e.target.value)}><option value="farmer">Farmer</option><option value="trader">Trader</option><option value="admin">Admin</option></select></div>
-          <div className="field"><label>Password</label><input type="password" value={form.password} onChange={e => set("password", e.target.value)} placeholder="Create a password" /></div>
-          {error && <div style={{ color: "var(--red)", fontSize: 13, marginBottom: 10 }}>{error}</div>}
-          <button className="btn-submit" onClick={handleSubmit} disabled={loading}>{loading ? "Creating..." : "Create Account ->"}</button>
-          <div className="auth-switch">Already have an account? <span onClick={onSwitch}>Sign in</span></div>
+    <>
+      <style>{css}</style>
+      <div className="auth-root">
+        <div className="auth-box">
+          <div className="auth-logo">🌿 SITNOVATE</div>
+          <div className="auth-sub">Smart Farming Platform</div>
+          <div className="auth-title">Create Account</div>
+
+          <form onSubmit={handle}>
+            <div className="field">
+              <label>Full Name</label>
+              <input type="text" placeholder="Ramesh Kumar" value={name} onChange={e => setName(e.target.value)} />
+            </div>
+            <div className="field">
+              <label>Email / Mobile</label>
+              <input type="text" placeholder="farmer@example.com" value={email} onChange={e => setEmail(e.target.value)} />
+            </div>
+            <div className="field">
+              <label>Password</label>
+              <input type="password" placeholder="••••••••" value={pass} onChange={e => setPass(e.target.value)} />
+            </div>
+
+            <div className="field">
+              <label>I am a…</label>
+              <div className="role-grid">
+                {ROLES.map(r => (
+                  <div
+                    key={r.label}
+                    className={`role-card ${role === r.label ? "selected" : ""}`}
+                    onClick={() => setRole(r.label)}
+                  >
+                    <div className="role-icon">{r.icon}</div>
+                    {r.label}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <button className="auth-btn" type="submit">Create Account →</button>
+          </form>
+
+          <div className="auth-footer">
+            Already registered?{" "}
+            <span className="auth-link" onClick={onSwitch}>Sign In</span>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

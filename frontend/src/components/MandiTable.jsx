@@ -1,76 +1,104 @@
-﻿export default function MandiTable({ mandis }) {
-  if (!mandis || mandis.length === 0) {
-    return (
-      <div className="mandi-table-card">
-        <h3>Mandi Price Comparison</h3>
-        <div className="empty-state">No live mandi data available.</div>
-      </div>
-    );
+﻿import { useState } from "react";
+import { mandiData } from "./mockData.js";
+
+const css = `
+  .mandi-table { width:100%; border-collapse:collapse; }
+  .mandi-table th {
+    text-align:left; font-size:.7rem; text-transform:uppercase; letter-spacing:.1em;
+    color:rgba(253,246,227,.35); padding:.5rem .75rem; border-bottom:1px solid var(--border);
   }
+  .mandi-table td {
+    padding:.75rem; font-size:.88rem;
+    border-bottom:1px solid rgba(255,255,255,.03);
+    transition: background .2s;
+  }
+  .mandi-row { cursor:pointer; animation:fadeUp .4s ease both; }
+  .mandi-row:hover td { background:var(--mist); }
 
-  const isLive = mandis[0]?.mandi_name || mandis[0]?.price_date || mandis[0]?.arrival_volume;
+  .crop-name  { display:flex; align-items:center; gap:.5rem; }
+  .crop-emoji { font-size:1.1rem; }
 
-  if (isLive) {
-    return (
-      <div className="mandi-table-card">
-        <h3>Live Mandi Prices</h3>
-        <table>
+  .price-tag  { font-family:'Syne'; font-weight:700; }
+
+  .price-change       { display:inline-flex; align-items:center; gap:.2rem; font-size:.8rem; }
+  .price-change.up    { color:var(--leaf-bright); }
+  .price-change.down  { color:var(--accent); }
+
+  .mini-bar-wrap { width:80px; height:6px; background:rgba(255,255,255,.08); border-radius:3px; overflow:hidden; }
+  .mini-bar      { height:100%; border-radius:3px; animation:growBar 1s ease both; }
+`;
+
+const TABS = ["Live", "Today", "Week"];
+
+export default function MandiTable() {
+  const [tab, setTab] = useState(0);
+
+  return (
+    <>
+      <style>{css}</style>
+      <div className="card">
+        <div className="card-header">
+          <span className="card-title">📋 Mandi Prices</span>
+          <div className="tabs" style={{ margin: 0, width: "auto" }}>
+            {TABS.map((t, i) => (
+              <button
+                key={i}
+                className={`tab ${tab === i ? "active" : ""}`}
+                onClick={() => setTab(i)}
+                style={{ padding: ".3rem .7rem", fontSize: ".75rem" }}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <table className="mandi-table">
           <thead>
             <tr>
-              <th>Market</th>
-              <th>Price</th>
-              <th>Arrival</th>
-              <th>Date</th>
-              <th>State</th>
-              <th>District</th>
+              <th>Crop</th>
+              <th>Price / Q</th>
+              <th>Change</th>
+              <th>Trend</th>
             </tr>
           </thead>
           <tbody>
-            {mandis.map((m, i) => (
-              <tr key={i} className={i === 0 ? "best-row" : ""}>
-                <td style={{ fontWeight: 600 }}>{m.mandi_name || m.market || "-"}</td>
-                <td>Rs {Number(m.price || 0).toLocaleString()}/q</td>
-                <td>{m.arrival_volume || "-"}</td>
-                <td>{m.price_date || "-"}</td>
-                <td>{m.state || "-"}</td>
-                <td>{m.district || "-"}</td>
+            {mandiData.map((row, i) => (
+              <tr
+                key={row.name}
+                className="mandi-row"
+                style={{ animationDelay: `${i * 0.06}s` }}
+              >
+                <td>
+                  <div className="crop-name">
+                    <span className="crop-emoji">{row.emoji}</span>
+                    <span>{row.name}</span>
+                  </div>
+                </td>
+                <td className="price-tag">₹{row.price.toLocaleString("en-IN")}</td>
+                <td>
+                  <span className={`price-change ${row.change > 0 ? "up" : "down"}`}>
+                    {row.change > 0 ? "▲" : "▼"} {Math.abs(row.change)}%
+                  </span>
+                </td>
+                <td>
+                  <div className="mini-bar-wrap">
+                    <div
+                      className="mini-bar"
+                      style={{
+                        "--w": `${row.bar}%`,
+                        width: `${row.bar}%`,
+                        background: row.color,
+                        animationDelay: `${i * 0.08}s`,
+                      }}
+                    />
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-    );
-  }
-
-  return (
-    <div className="mandi-table-card">
-      <h3>Mandi Price Comparison</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Market</th>
-            <th>Predicted Price</th>
-            <th>Distance</th>
-            <th>Transport Cost</th>
-            <th>Net Profit</th>
-            <th>7-Day Trend</th>
-          </tr>
-        </thead>
-        <tbody>
-          {mandis
-            .sort((a, b) => (b.profit || 0) - (a.profit || 0))
-            .map((m, i) => (
-              <tr key={i} className={i === 0 ? "best-row" : ""}>
-                <td style={{ fontWeight: 600 }}>{m.name}</td>
-                <td>Rs {Number(m.price || 0).toLocaleString()}/q</td>
-                <td>{m.distance || "-"} km</td>
-                <td>Rs {Number(m.transport || 0).toLocaleString()}</td>
-                <td className="profit-val">Rs {Number(m.profit || 0).toLocaleString()}</td>
-                <td className={String(m.trend || "").startsWith("+") ? "trend-pos" : "trend-neg"}>{m.trend || "-"}</td>
-              </tr>
-            ))}
-        </tbody>
-      </table>
-    </div>
+    </>
   );
 }
