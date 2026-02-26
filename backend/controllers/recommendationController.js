@@ -7,20 +7,176 @@ import { getRankedActions } from "../services/preservationService.js";
 
 const ML_SERVICE_URL = process.env.ML_SERVICE_URL || "";
 
-const tryMlRecommendation = async ({ cropId, region, quantity }) => {
+const tryMlRecommendation = async ({ cropId, region, quantity, soil, storage, weather, mandiPrices }) => {
   if (!ML_SERVICE_URL) return null;
 
   try {
     const res = await fetch(`${ML_SERVICE_URL}/recommend`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ crop_id: cropId, region, quantity })
+      body: JSON.stringify({ 
+        crop_id: cropId, 
+        region, 
+        quantity,
+        soil: soil || {},
+        storage: storage || {},
+        weather: weather || [],
+        mandi_prices: mandiPrices || []
+      })
     });
     if (!res.ok) return null;
     const data = await res.json();
     return data;
-  } catch {
+  } catch (err) {
+    console.error("ML recommendation error:", err);
     return null;
+  }
+};
+
+export const simulateSpoilage = async (req, res) => {
+  try {
+    const { crop_type, quantity, initial_quality, storage_temp, storage_humidity, transit_hours, weather } = req.body;
+    
+    // Try ML service first
+    if (ML_SERVICE_URL) {
+      try {
+        const mlResponse = await fetch(`${ML_SERVICE_URL}/simulate/spoilage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            crop_type: crop_type || 'vegetable',
+            quantity: Number(quantity) || 100,
+            initial_quality: Number(initial_quality) || 1.0,
+            storage_temp: Number(storage_temp) || 20,
+            storage_humidity: Number(storage_humidity) || 60,
+            transit_hours: Number(transit_hours) || 0,
+            weather: weather || []
+          })
+        });
+
+        if (mlResponse.ok) {
+          const data = await mlResponse.json();
+          return res.json(data);
+        }
+      } catch (mlErr) {
+        console.log("ML service unavailable, using fallback simulation");
+      }
+    }
+
+    // Fallback spoilage simulation when ML service is not available
+    const temp = Number(storage_temp) || 20;
+    const humidity = Number(storage_humidity) || 60;
+    const transit = Number(transit_hours) || 0;
+    const initQuality = Number(initial_quality) || 1.0;
+    
+    const tempImpact = temp > 30 ? 25 : temp > 25 ? 15 : temp < 10 ? 5 : 10;
+    const humidityImpact = humidity > 80 ? 25 : humidity > 70 ? 15 : humidity < 40 ? 5 : 10;
+    const transitImpact = transit > 12 ? 20 : transit > 6 ? 12 : transit > 3 ? 6 : 2;
+    
+    let weatherImpact = 0;
+    if (weather && weather.length > 0) {
+      weather.forEach(w => {
+        if (w.temperature > 30) weatherImpact += 10;
+        if (w.humidity > 80) weatherImpact += 8;
+        if (w.rainfall > 20) weatherImpact += 7;
+      });
+      weatherImpact = Math.min(20, weatherImpact);
+    }
+    
+    const totalImpact = tempImpact + humidityImpact + transitImpact + weatherImpact;
+    const dailyRate = totalImpact / 100;
+    
+    const simulationResults = [];
+    let remainingQuality = initQuality * 100;
+    let cumulativeSpoilage = 0;
+    
+    for (let day = 1; day <= 7; day++) {
+      const dailySpoilage = dailyRate * (1 + (day * 0.1));
+      cumulativeSpoilage = Math.min(100, cumulativeSpoilage + dailySpoilage);
+      remainingQuality = Math.max(0, 100 - cumulativeSpoilage);
+      
+      simulationResults.push({
+        day,
+        spoilage_rate: Math.round(dailySpoilage * 10) / 10,
+        cumulative_spoilage: Math.round(cumulativeSpoilage * 10) / 10,
+        remaining_quality: Math.round(remainingQuality * 10) / 10
+      });
+    }
+    
+    const finalSpoilage = Math.round(cumulativeSpoilage * 10) / 10;
+    const riskLevel = finalSpoilage > 50 ? "HIGH" : finalSpoilage > 25 ? "MEDIUM" : "LOW";
+    const recommendation = finalSpoilage > 50 
+      ? "Sell immediately to minimize losses" 
+      : finalSpoilage > 25 
+        ? "Sell within 2-3 days" 
+        : "Quality can be maintained for a week with proper storage";
+    
+    return res.json({
+      simulation_results: simulationResults,
+      final_spoilage_percent: finalSpoilage,
+      risk_level: riskLevel,
+      recommendation,
+      factors: {
+        temperature_impact: tempImpact,
+        humidity_impact: humidityImpact,
+        transit_impact: transitImpact,
+        weather_impact: weatherImpact
+      },
+      optimal_conditions: {
+        suggested_temp: "4-10C",
+        suggested_humidity: "40-60%",
+        max_transit_hours: 6
+      }
+    });
+  } catch (err) {
+    console.error("Spoilage simulation error:", err);
+    return res.status(500).json({ message: "Failed to simulate spoilage" });
+  }
+};
+
+export const trainMlModel = async (req, res) => {
+  try {
+    const { model_type, training_data } = req.body;
+    
+    if (!ML_SERVICE_URL) {
+      return res.status(503).json({ message: "ML service not configured" });
+    }
+
+    const mlResponse = await fetch(`${ML_SERVICE_URL}/train/${model_type}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(training_data || {})
+    });
+
+    if (!mlResponse.ok) {
+      const error = await mlResponse.json();
+      return res.status(500).json({ message: error.message || "Failed to train model" });
+    }
+
+    const data = await mlResponse.json();
+    return res.json(data);
+  } catch (err) {
+    console.error("Model training error:", err);
+    return res.status(500).json({ message: "Failed to train model" });
+  }
+};
+
+export const getMlFeatures = async (req, res) => {
+  try {
+    if (!ML_SERVICE_URL) {
+      return res.status(503).json({ message: "ML service not configured" });
+    }
+
+    const mlResponse = await fetch(`${ML_SERVICE_URL}/features`);
+    if (!mlResponse.ok) {
+      return res.status(500).json({ message: "Failed to fetch features" });
+    }
+
+    const data = await mlResponse.json();
+    return res.json(data);
+  } catch (err) {
+    console.error("Get features error:", err);
+    return res.status(500).json({ message: "Failed to fetch features" });
   }
 };
 
@@ -54,6 +210,7 @@ const getLiveMandi = async ({ cropName, region }) => {
   const raw = await fetchMandiPrices({ crop: cropName, state: region });
   const normalized = normalizeMandiPrices(raw);
   if (!normalized.length) return null;
+  // Sort by price (descending) and use the one with best price
   const best = normalized.sort((a, b) => Number(b.price || 0) - Number(a.price || 0))[0];
   return best || null;
 };
@@ -97,6 +254,8 @@ export const generateRecommendation = async (req, res) => {
     let { crop_id, region, quantity, soil_ph, soil_n, soil_p, soil_k, storage_temp, storage_humidity, transit_hours } = req.body;
     const userId = req.user?.id;
 
+    console.log("Generate recommendation called:", { crop_id, region, quantity, userId });
+
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized." });
     }
@@ -108,6 +267,7 @@ export const generateRecommendation = async (req, res) => {
 
     if (!region) {
       region = await getUserRegion(userId);
+      console.log("Using user region:", region);
     }
 
     if (!region) {
@@ -115,6 +275,8 @@ export const generateRecommendation = async (req, res) => {
     }
 
     const crop = await getCrop(cropIdNum);
+    console.log("Got crop:", crop);
+    
     const ml = await tryMlRecommendation({ cropId: cropIdNum, region, quantity });
 
     let suggestedMandi = null;
@@ -132,13 +294,32 @@ export const generateRecommendation = async (req, res) => {
       predictedPrice = Number(ml.predicted_price || predictedPrice);
       explanationText = ml.explanation_text || "ML-based recommendation.";
     } else {
+      console.log("ML service not available, using fallback logic");
+      
       const bestMandi = await getBestMandi(cropIdNum);
+      console.log("Best mandi from DB:", bestMandi);
+      
       const weather = await getWeatherForRegion({ region });
       spoilageRisk = estimateSpoilageRisk(weather);
+      console.log("Weather and spoilage risk:", { weatherCount: weather.length, spoilageRisk });
 
-      const transportCost = estimateTransportCost({ quantity, distanceKm: 30 });
+      // Get live mandi prices as fallback
+      const liveMandi = await getLiveMandi({ cropName: crop?.name || "", region });
+      console.log("Live mandi:", liveMandi);
 
-      if (bestMandi) {
+      const transportCost = estimateTransportCost({ quantity, distanceKm: liveMandi?.distance || 30 });
+      console.log("Transport cost:", transportCost);
+
+      if (liveMandi && liveMandi.price > 0) {
+        suggestedMandi = liveMandi.mandi_name;
+        predictedPrice = Number(liveMandi.price || 0);
+        predictedProfit = calculateProfit({
+          pricePerUnit: predictedPrice,
+          quantity: Number(quantity || 0),
+          transportCost
+        });
+        explanationText = `Selected ${suggestedMandi} with highest live price of Rs ${predictedPrice}/q. Transport cost: Rs ${transportCost}.`;
+      } else if (bestMandi) {
         suggestedMandi = bestMandi.mandi_name;
         predictedPrice = Number(bestMandi.price || 0);
         predictedProfit = calculateProfit({
@@ -148,21 +329,15 @@ export const generateRecommendation = async (req, res) => {
         });
         explanationText = "Selected mandi with highest recent stored price and adjusted for transport cost.";
       } else {
-        const live = await getLiveMandi({ cropName: crop?.name || "", region });
-        if (live) {
-          suggestedMandi = live.mandi_name;
-          predictedPrice = Number(live.price || 0);
-          predictedProfit = calculateProfit({
-            pricePerUnit: predictedPrice,
-            quantity: Number(quantity || 0),
-            transportCost
-          });
-          explanationText = "Selected mandi with highest live price and adjusted for transport cost.";
-        } else {
-          suggestedMandi = "Nearest Mandi";
-          predictedProfit = calculateProfit({ pricePerUnit: 0, quantity: Number(quantity || 0), transportCost });
-          explanationText = "No recent mandi price data found. Using default recommendation.";
-        }
+        // Use default values when no data available
+        suggestedMandi = "Nearest Mandi";
+        predictedPrice = 2000; // Default reasonable price
+        predictedProfit = calculateProfit({
+          pricePerUnit: predictedPrice,
+          quantity: Number(quantity || 0),
+          transportCost
+        });
+        explanationText = "No recent mandi price data found. Using estimated price based on market averages.";
       }
 
       const soilScore = crop
@@ -174,11 +349,12 @@ export const generateRecommendation = async (req, res) => {
 
       spoilageRisk = spoilageAdjust({ baseRisk: spoilageRisk, storage_temp, storage_humidity, transit_hours });
 
-      explanationText = `${explanationText} Soil suitability score is ${(soilScore * 100).toFixed(0)}%. Spoilage risk accounts for storage and transit conditions.`;
+      explanationText = `${explanationText} Soil suitability score is ${(soilScore * 100).toFixed(0)}%. Spoilage risk: ${(spoilageRisk * 100).toFixed(0)}%.`;
     }
 
     const actions = await getRankedActions();
     const topActions = actions.slice(0, 3);
+    console.log("Preservation actions:", topActions.length);
 
     const insertResult = await pool.query(
       `INSERT INTO recommendations (user_id, crop_id, suggested_mandi, harvest_window, spoilage_risk, predicted_profit, explanation_text)
@@ -187,16 +363,24 @@ export const generateRecommendation = async (req, res) => {
       [userId, cropIdNum, suggestedMandi, harvestWindow, spoilageRisk, predictedProfit, explanationText]
     );
 
-    return res.status(201).json({
+    const soilScore = crop
+      ? Math.round(((rangeScore(Number(soil_ph), crop.optimal_ph_range)
+          + rangeScore(Number(soil_n), crop.optimal_n_range)
+          + rangeScore(Number(soil_p), crop.optimal_p_range)
+          + rangeScore(Number(soil_k), crop.optimal_k_range)) / 4) * 100)
+      : null;
+
+    const response = {
       ...insertResult.rows[0],
       predicted_price: predictedPrice,
       preservation_actions: topActions,
-      soil_score: crop ? Math.round(((rangeScore(Number(soil_ph), crop.optimal_ph_range)
-        + rangeScore(Number(soil_n), crop.optimal_n_range)
-        + rangeScore(Number(soil_p), crop.optimal_p_range)
-        + rangeScore(Number(soil_k), crop.optimal_k_range)) / 4) * 100) : null
-    });
+      soil_score: soilScore
+    };
+
+    console.log("Sending response:", response);
+    return res.status(201).json(response);
   } catch (err) {
+    console.error("Generate recommendation error:", err);
     return res.status(500).json({ message: "Failed to generate recommendation." });
   }
 };

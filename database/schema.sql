@@ -14,14 +14,10 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS crops (
   id                BIGSERIAL PRIMARY KEY,
   name              TEXT NOT NULL UNIQUE,
-  optimal_ph_range  NUMRANGE NOT NULL,
-  optimal_n_range   NUMRANGE NOT NULL,
-  optimal_p_range   NUMRANGE NOT NULL,
-  optimal_k_range   NUMRANGE NOT NULL,
-  CHECK (lower(optimal_ph_range) <= upper(optimal_ph_range)),
-  CHECK (lower(optimal_n_range)  <= upper(optimal_n_range)),
-  CHECK (lower(optimal_p_range)  <= upper(optimal_p_range)),
-  CHECK (lower(optimal_k_range)  <= upper(optimal_k_range))
+  optimal_ph_range  TEXT NOT NULL,
+  optimal_n_range   TEXT NOT NULL,
+  optimal_p_range   TEXT NOT NULL,
+  optimal_k_range   TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS mandi_prices (

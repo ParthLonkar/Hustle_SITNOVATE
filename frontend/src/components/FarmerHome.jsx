@@ -1,14 +1,31 @@
-﻿import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import WeatherStrip from "./WeatherStrip";
 import SpoilageRing from "./SpoilageRing";
+import SpoilageSimulator from "./SpoilageSimulator";
 import MandiTable from "./MandiTable";
 import { apiGet, apiPost } from "../services/api";
+// No mock data imports - using real APIs only
 
 const formatRange = (range) => {
   if (!range) return "-";
   return String(range).replace("[", "").replace("]", "").replace(")", "");
 };
+
+// Debounce hook
+function useDebounce(value, delay) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => clearTimeout(handler);
+  }, [value, delay]);
+
+  return debouncedValue;
+}
 
 export default function FarmerHome() {
   const { user } = useAuth();
@@ -25,9 +42,19 @@ export default function FarmerHome() {
   const [history, setHistory] = useState([]);
   const [error, setError] = useState("");
   const [tab, setTab] = useState("home");
+  const [weatherLoading, setWeatherLoading] = useState(false);
+  const [mandiLoading, setMandiLoading] = useState(false);
+  
+  // Debounce region to avoid frequent API calls
+  const debouncedRegion = useDebounce(region, 500);
+  
+  // Refs for cleanup
+  const weatherAbortRef = useRef(null);
+  const mandiAbortRef = useRef(null);
 
   const selectedCrop = useMemo(() => crops.find((c) => c.id === cropId), [crops, cropId]);
 
+  // Initialize crops
   useEffect(() => {
     const init = async () => {
       try {
@@ -35,44 +62,105 @@ export default function FarmerHome() {
         setCrops(cropRows);
         if (cropRows.length && !cropId) setCropId(cropRows[0].id);
       } catch (err) {
-        setError(err?.message || "Failed to load crops.");
+        console.error("Failed to load crops:", err);
+        setError("Failed to load crops. Please refresh.");
       }
     };
     init();
-  }, [cropId]);
+  }, []);
 
+  // Load weather with debounce and proper cleanup
   useEffect(() => {
-    if (!region) return;
+    if (!debouncedRegion) return;
+    
     const loadWeather = async () => {
+      // Cancel previous request
+      if (weatherAbortRef.current) {
+        weatherAbortRef.current.cancelled = true;
+      }
+      
+      setWeatherLoading(true);
       try {
-        const data = await apiGet(`/api/weather?region=${encodeURIComponent(region)}&live=1`);
-        setWeather(data);
+        const controller = { cancelled: false };
+        weatherAbortRef.current = controller;
+        
+        const data = await apiGet(`/api/weather?region=${encodeURIComponent(debouncedRegion)}&live=1`);
+        
+        if (!controller.cancelled) {
+          setWeather(data);
+        }
       } catch (err) {
-        setWeather([]);
+        if (!weatherAbortRef.current?.cancelled) {
+          console.error("Weather load error:", err);
+          setWeather([]);
+          setError("Weather data unavailable. Please check your region.");
+        }
+      } finally {
+        if (!weatherAbortRef.current?.cancelled) {
+          setWeatherLoading(false);
+        }
       }
     };
+    
     loadWeather();
-  }, [region]);
-
-  useEffect(() => {
-    if (!selectedCrop?.name) return;
-    const loadMandis = async () => {
-      try {
-        const data = await apiGet(`/api/mandi-prices?live=1&crop=${encodeURIComponent(selectedCrop.name)}&state=${encodeURIComponent(region)}`);
-        setMandis(data);
-      } catch (err) {
-        setMandis([]);
+    
+    return () => {
+      if (weatherAbortRef.current) {
+        weatherAbortRef.current.cancelled = true;
       }
     };
-    loadMandis();
-  }, [selectedCrop, region]);
+  }, [debouncedRegion]);
 
+  // Load mandis with proper cleanup
+  useEffect(() => {
+    if (!selectedCrop?.name || !debouncedRegion) return;
+    
+    const loadMandis = async () => {
+      // Cancel previous request
+      if (mandiAbortRef.current) {
+        mandiAbortRef.current.cancelled = true;
+      }
+      
+      setMandiLoading(true);
+      try {
+        const controller = { cancelled: false };
+        mandiAbortRef.current = controller;
+        
+        const data = await apiGet(`/api/mandi-prices?live=1&crop=${encodeURIComponent(selectedCrop.name)}&state=${encodeURIComponent(debouncedRegion)}`);
+        
+        if (!controller.cancelled) {
+          setMandis(data);
+        }
+      } catch (err) {
+        if (!mandiAbortRef.current?.cancelled) {
+          console.error("Mandi load error:", err);
+          setMandis([]);
+        }
+      } finally {
+        if (!mandiAbortRef.current?.cancelled) {
+          setMandiLoading(false);
+        }
+      }
+    };
+    
+    loadMandis();
+    
+    return () => {
+      if (mandiAbortRef.current) {
+        mandiAbortRef.current.cancelled = true;
+      }
+    };
+  }, [selectedCrop, debouncedRegion]);
+
+  // Load history
   useEffect(() => {
     const loadHistory = async () => {
       try {
-        const data = await apiGet("/api/recommendations/me", localStorage.getItem("ag_token"));
+        const token = localStorage.getItem("ag_token");
+        const data = await apiGet("/api/recommendations/me", token);
         setHistory(data);
       } catch (err) {
+        console.error("History load error:", err);
         setHistory([]);
       }
     };
@@ -151,6 +239,7 @@ export default function FarmerHome() {
         {[
           { id: "home", label: "Home" },
           { id: "prices", label: "Prices" },
+          { id: "simulator", label: "Simulator" },
           { id: "weather", label: "Weather" },
           { id: "history", label: "History" },
         ].map((t) => (
@@ -297,15 +386,92 @@ export default function FarmerHome() {
             <SpoilageRing risk={result.spoilage_risk} />
           </div>
 
-          <WeatherStrip weather={result.weather} />
+          <WeatherStrip weather={result.weather} loading={weatherLoading} />
           <MandiTable mandis={mandis} />
         </>
+      )}
+
+      {tab === "simulator" && (
+        <SpoilageSimulator />
       )}
 
       {tab === "prices" && (
         <div className="mandi-table-card">
           <h3>Live Mandi Prices</h3>
-          <MandiTable mandis={mandis} />
+          
+          {result && (
+            <div className="ai-suggestion-box" style={{ 
+              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", 
+              padding: 16, 
+              borderRadius: 8, 
+              marginBottom: 20,
+              color: "white"
+            }}>
+              <div style={{ fontSize: 12, opacity: 0.9, marginBottom: 4 }}>🤖 AI RECOMMENDED</div>
+              <div style={{ fontSize: 20, fontWeight: 700 }}>{result.best_mandi}</div>
+              <div style={{ fontSize: 13, opacity: 0.9 }}>
+                Predicted Price: Rs {result.predicted_price.toLocaleString()}/q • 
+                Est. Profit: Rs {result.net_profit.toLocaleString()}
+              </div>
+              <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>
+                Harvest: {result.harvest_window} • Risk: {Math.round(result.spoilage_risk * 100)}%
+              </div>
+            </div>
+          )}
+          
+          {mandiLoading && (
+            <div style={{ textAlign: "center", padding: 20, color: "var(--textMid)" }}>
+              Loading live prices...
+            </div>
+          )}
+          
+          {!mandiLoading && mandis.length > 0 && (
+            <>
+              <MandiTable mandis={mandis} />
+              
+              {/* Profitability Comparison */}
+              {result && (
+                <div style={{ marginTop: 20, padding: 16, background: "var(--bgLight)", borderRadius: 8 }}>
+                  <h4 style={{ margin: "0 0 12px 0" }}>📊 Profitability Comparison</h4>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
+                    {mandis.slice(0, 5).map((m, i) => {
+                      const isRecommended = m.mandi_name === result.best_mandi;
+                      const transportCost = m.distance ? m.distance * 25 : 0;
+                      const profit = (Number(m.price || 0) * Number(qty || 0)) - transportCost;
+                      return (
+                        <div key={i} style={{ 
+                          padding: 12, 
+                          borderRadius: 6, 
+                          border: isRecommended ? "2px solid var(--green)" : "1px solid var(--border)",
+                          background: isRecommended ? "rgba(76, 175, 80, 0.1)" : "white"
+                        }}>
+                          <div style={{ fontWeight: 600, display: "flex", justifyContent: "space-between" }}>
+                            {m.mandi_name}
+                            {isRecommended && <span style={{ color: "var(--green)", fontSize: 12 }}>✓ Recommended</span>}
+                          </div>
+                          <div style={{ fontSize: 13, color: "var(--textMid)", marginTop: 4 }}>
+                            <div>Price: Rs {Number(m.price || 0).toLocaleString()}/q</div>
+                            <div>Transport: Rs {transportCost.toLocaleString()}</div>
+                            <div style={{ fontWeight: 600, color: profit > 0 ? "var(--green)" : "var(--red)" }}>
+                              Est. Profit: Rs {profit.toLocaleString()}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+          
+          {!mandiLoading && mandis.length === 0 && (
+            <div style={{ textAlign: "center", padding: 40, color: "var(--textMid)" }}>
+              <div style={{ fontSize: 24, marginBottom: 8 }}>📊</div>
+              <p>No live mandi prices available.</p>
+              <p style={{ fontSize: 12 }}>Enter a region and select a crop to see prices.</p>
+            </div>
+          )}
         </div>
       )}
 
@@ -317,7 +483,7 @@ export default function FarmerHome() {
             temp: Number(w.temperature || 0),
             rain: Number(w.rainfall || 0),
             humidity: Number(w.humidity || 0),
-          }))} />
+          }))} loading={weatherLoading} />
         </div>
       )}
 
