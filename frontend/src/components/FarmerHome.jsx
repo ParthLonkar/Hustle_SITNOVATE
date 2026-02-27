@@ -60,7 +60,7 @@ function LanguageSelector() {
 }
 
 export default function FarmerHome() {
-  const { user, logout } = useAuth();
+  const { user, logout, token } = useAuth();
   const { t } = useContext(LanguageContext);
   const [crops, setCrops] = useState([]);
   const [cropId, setCropId] = useState(null);
@@ -150,7 +150,21 @@ export default function FarmerHome() {
       try {
         const token = localStorage.getItem("ag_token");
         const data = await apiGet("/api/recommendations/me", token);
-        setHistory(data);
+        console.debug("[History API response - first record]", data?.[0]);
+        // Normalize all records to consistent field names
+        const normalized = (data || []).map(r => ({
+          ...r,
+          crop_name: r.crop_name || r.cropName || r.crop || crops.find(c => c.id === r.crop_id)?.name || "",
+          suggested_mandi: r.suggested_mandi || r.suggestedMandi || r.mandi_name || "",
+          harvest_window: r.harvest_window || r.harvestWindow || "",
+          predicted_profit: Number(r.predicted_profit || r.predictedProfit || r.net_profit || 0),
+          spoilage_risk: (() => {
+            const raw = Number(r.spoilage_risk || r.spoilageRisk || r.risk || 0);
+            return raw <= 1 ? raw : raw / 100;
+          })(),
+          created_at: r.created_at || r.createdAt || r.timestamp || null,
+        }));
+        setHistory(normalized);
       } catch { setHistory([]); }
     };
     loadHistory();
@@ -179,11 +193,19 @@ export default function FarmerHome() {
         token
       );
       const predictedPrice = Number(data.predicted_price || 0);
+
+      // Compute the real spoilage risk — prefer the live-simulated value if available,
+      // fall back to what the API returned
+      const computedSpoilageRisk = data.spoilage_risk;
+
+      // Debug: log what the API actually returns so we can verify field names
+      console.debug("[Recommendation API response]", JSON.stringify(data, null, 2));
+
       setResult({
         best_mandi: data.suggested_mandi,
         harvest_window: data.harvest_window,
         predicted_price: predictedPrice,
-        spoilage_risk: data.spoilage_risk,
+        spoilage_risk: computedSpoilageRisk,
         net_profit: data.predicted_profit,
         explanation: data.explanation_text,
         weather: weather.map((w) => ({
@@ -195,7 +217,21 @@ export default function FarmerHome() {
         preservation_actions: data.preservation_actions || [],
         soil_score: data.soil_score,
       });
-      setHistory((prev) => [data, ...prev]);
+
+      // Normalize the history record so it always has consistent field names
+      // regardless of what the API returns
+      const historyRecord = {
+        ...data,
+        id: data.id || Date.now(),
+        crop_name: data.crop_name || data.cropName || crops.find(c => c.id === cropId)?.name || "",
+        suggested_mandi: data.suggested_mandi || data.suggestedMandi || "",
+        harvest_window: data.harvest_window || data.harvestWindow || "",
+        predicted_profit: Number(data.predicted_profit || data.predictedProfit || data.net_profit || 0),
+        // Always store as 0-1 decimal for consistency
+        spoilage_risk: computedSpoilageRisk <= 1 ? computedSpoilageRisk : computedSpoilageRisk / 100,
+        created_at: new Date().toISOString(),
+      };
+      setHistory((prev) => [historyRecord, ...prev]);
       setTab("home");
     } catch (err) {
       setError(err?.message || t('failedToGenerate'));
@@ -341,13 +377,13 @@ export default function FarmerHome() {
                   </div>
                 </div>
                 <div className="g-card-solid" style={{ padding: 24, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                  <SpoilageRing risk={result.spoilage_risk} weather={result.weather} />
+                  <SpoilageRing risk={result.spoilage_risk} weather={result.weather} storage={storage} cropType={selectedCrop?.crop_type || "grain"} token={token} />
                 </div>
               </div>
             )}
             {result && (
               <div style={{ marginTop: 20 }}>
-                <WeatherStrip weather={result.weather} loading={weatherLoading} />
+                <WeatherStrip weather={result.weather} loading={weatherLoading} compact />
               </div>
             )}
             {result && mandis.length > 0 && (
@@ -480,9 +516,9 @@ export default function FarmerHome() {
                       </div>
                     )}
                   </div>
-                  <SpoilageRing risk={result.spoilage_risk} weather={result.weather} />
+                  <SpoilageRing risk={result.spoilage_risk} weather={result.weather} storage={storage} cropType={selectedCrop?.crop_type || "grain"} token={token} />
                 </div>
-                <WeatherStrip weather={result.weather} loading={weatherLoading} />
+                <WeatherStrip weather={result.weather} loading={weatherLoading} compact />
                 <MandiTable mandis={mandis} />
               </>
             )}
@@ -529,18 +565,16 @@ export default function FarmerHome() {
               <h2>{t('weather')}</h2>
               <p>{t('dayWeatherForecast')} {region || t('notSet')}</p>
             </div>
-            <div className="mandi-table-card">
-              <h3>{t('weather')}</h3>
-              <WeatherStrip
-                weather={weather.map((w) => ({
-                  day: new Date(w.forecast_date).toLocaleDateString(undefined, { weekday: "short" }),
-                  temp: Number(w.temperature || 0),
-                  rain: Number(w.rainfall || 0),
-                  humidity: Number(w.humidity || 0),
-                }))}
-                loading={weatherLoading}
-              />
-            </div>
+            <WeatherStrip
+              region={region}
+              weather={weather.map((w) => ({
+                day: new Date(w.forecast_date).toLocaleDateString(undefined, { weekday: "short" }),
+                temp: Number(w.temperature || 0),
+                rain: Number(w.rainfall || 0),
+                humidity: Number(w.humidity || 0),
+              }))}
+              loading={weatherLoading}
+            />
           </div>
         )}
         {tab === "simulator" && (
@@ -580,19 +614,30 @@ export default function FarmerHome() {
                         <th>{t('harvestWindow')}</th>
                         <th>{t('estNetProfit')}</th>
                         <th>{t('spoilageRisk')}</th>
+                        <th>Date</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {history.slice(0, 20).map((r) => {
-                        const risk = Number(r.spoilage_risk || 0) * 100;
-                        const riskClass = risk > 50 ? "risk-high" : risk > 25 ? "risk-med" : "risk-low";
+                      {history.slice(0, 20).map((r, idx) => {
+                        const cropName = r.crop_name || r.cropName || r.crop || crops.find(c => c.id === r.crop_id)?.name || "—";
+                        const mandi = r.suggested_mandi || r.suggestedMandi || r.mandi_name || r.mandi || "—";
+                        const harvestWindow = r.harvest_window || r.harvestWindow || r.harvest_date || "—";
+                        const profit = Number(r.predicted_profit || r.predictedProfit || r.net_profit || r.netProfit || 0);
+                        const rawRisk = Number(r.spoilage_risk || r.spoilageRisk || r.risk || 0);
+                        const riskPct = rawRisk <= 1 ? Math.round(rawRisk * 100) : Math.round(rawRisk);
+                        const riskClass = riskPct > 50 ? "risk-high" : riskPct > 25 ? "risk-med" : "risk-low";
+                        const date = r.created_at || r.createdAt || r.timestamp || null;
+                        const dateStr = date ? new Date(date).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : `#${idx + 1}`;
                         return (
-                          <tr key={r.id} style={{ borderBottom: "1px solid var(--border)" }}>
-                            <td style={{ padding: "12px 16px" }}><span className="pill green">{r.crop_name || selectedCrop?.name}</span></td>
-                            <td style={{ padding: "12px 16px", fontSize: 13, color: "var(--txt)", fontWeight: 600 }}>{r.suggested_mandi}</td>
-                            <td style={{ padding: "12px 16px", fontSize: 12, color: "var(--txt3)" }}>{r.harvest_window}</td>
-                            <td style={{ padding: "12px 16px", fontSize: 13, fontWeight: 700, color: "var(--g)" }}>₹{Number(r.predicted_profit || 0).toLocaleString()}</td>
-                            <td style={{ padding: "12px 16px" }}><span className={`risk_chip ${riskClass}`}>{Math.round(risk)}%</span></td>
+                          <tr key={r.id || idx} style={{ borderBottom: "1px solid var(--border)" }}>
+                            <td style={{ padding: "12px 16px" }}><span className="pill green">{cropName}</span></td>
+                            <td style={{ padding: "12px 16px", fontSize: 13, color: "var(--txt)", fontWeight: 600 }}>{mandi}</td>
+                            <td style={{ padding: "12px 16px", fontSize: 12, color: "var(--txt3)" }}>{harvestWindow}</td>
+                            <td style={{ padding: "12px 16px", fontSize: 13, fontWeight: 700, color: "var(--g)" }}>
+                              {profit > 0 ? `₹${profit.toLocaleString("en-IN")}` : "—"}
+                            </td>
+                            <td style={{ padding: "12px 16px" }}><span className={`risk-chip ${riskClass}`}>{riskPct}%</span></td>
+                            <td style={{ padding: "12px 16px", fontSize: 12, color: "var(--txt3)" }}>{dateStr}</td>
                           </tr>
                         );
                       })}

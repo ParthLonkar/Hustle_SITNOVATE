@@ -280,12 +280,17 @@ export const generateRecommendation = async (req, res) => {
 
     const crop = await getCrop(cropIdNum);
     console.log("Got crop:", crop);
-    
+
+    // Always fetch weather — needed for spoilage calculation regardless of ML path
+    const weather = await getWeatherForRegion({ region });
+    const baseWeatherRisk = estimateSpoilageRisk(weather);
+    console.log("Weather spoilage base risk:", baseWeatherRisk);
+
     const ml = await tryMlRecommendation({ cropId: cropIdNum, region, quantity });
 
     let suggestedMandi = null;
     let harvestWindow = "3-7 days";
-    let spoilageRisk = 0.2;
+    let spoilageRisk = baseWeatherRisk; // use real weather risk as default, not hardcoded 0.2
     let predictedProfit = 0;
     let explanationText = "";
     let predictedPrice = 0;
@@ -293,7 +298,9 @@ export const generateRecommendation = async (req, res) => {
     if (ml && ml.suggested_mandi) {
       suggestedMandi = ml.suggested_mandi;
       harvestWindow = ml.harvest_window || harvestWindow;
-      spoilageRisk = Number(ml.spoilage_risk || spoilageRisk);
+      // ML gives a base risk — still adjust it with user's actual storage/transit inputs
+      const mlBaseRisk = Number(ml.spoilage_risk ?? baseWeatherRisk);
+      spoilageRisk = spoilageAdjust({ baseRisk: mlBaseRisk, storage_temp, storage_humidity, transit_hours });
       predictedProfit = Number(ml.predicted_profit || predictedProfit);
       predictedPrice = Number(ml.predicted_price || predictedPrice);
       explanationText = ml.explanation_text || "ML-based recommendation.";
@@ -303,8 +310,8 @@ export const generateRecommendation = async (req, res) => {
       const bestMandi = await getBestMandi(cropIdNum);
       console.log("Best mandi from DB:", bestMandi);
       
-      const weather = await getWeatherForRegion({ region });
-      spoilageRisk = estimateSpoilageRisk(weather);
+      // weather already fetched above, reuse it
+      spoilageRisk = baseWeatherRisk;
       console.log("Weather and spoilage risk:", { weatherCount: weather.length, spoilageRisk });
 
       // Get live mandi prices as fallback
@@ -353,7 +360,7 @@ export const generateRecommendation = async (req, res) => {
 
       spoilageRisk = spoilageAdjust({ baseRisk: spoilageRisk, storage_temp, storage_humidity, transit_hours });
 
-      explanationText = `${explanationText} Soil suitability score is ${(soilScore * 100).toFixed(0)}%. Spoilage risk: ${(spoilageRisk * 100).toFixed(0)}%.`;
+      explanationText = `${explanationText} Soil suitability: ${(soilScore * 100).toFixed(0)}%. Spoilage risk: ${(spoilageRisk * 100).toFixed(0)}% (weather base: ${(baseWeatherRisk * 100).toFixed(0)}%, adjusted for storage conditions).`;
     }
 
     const actions = await getRankedActions();
@@ -393,7 +400,10 @@ export const listRecommendationsForUser = async (req, res) => {
   try {
     const userId = req.user?.id;
     const result = await pool.query(
-      `SELECT r.*, c.name as crop_name
+      `SELECT r.id, r.user_id, r.crop_id, r.suggested_mandi, r.harvest_window,
+              r.spoilage_risk, r.predicted_profit, r.explanation_text,
+              r.created_at,
+              c.name as crop_name
        FROM recommendations r
        JOIN crops c ON c.id = r.crop_id
        WHERE r.user_id = $1

@@ -229,12 +229,12 @@
         position: relative; overflow: hidden;
       }
       .stat-card::after {
-        content: ''; position: absolute; top: -24px; right: -24px;
-        width: 80px; height: 80px; border-radius: 50%;
-        background: var(--green-bg); pointer-events: none;
+        content: ''; position: absolute; top: -32px; right: -32px;
+        width: 90px; height: 90px; border-radius: 50%;
+        background: var(--green-bg); pointer-events: none; opacity: 0.7;
       }
       .stat-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
-      .stat-icon { font-size: 22px; margin-bottom: 14px; }
+      .stat-icon { font-size: 24px; margin-bottom: 14px; line-height: 1; }
       .stat-val {
         font-family: var(--font-head); font-weight: 800;
         font-size: 30px; color: var(--txt);
@@ -531,6 +531,27 @@
         display: flex; align-items: center; gap: 12px;
         letter-spacing: -0.3px;
       }
+        .auth-left-logo img {
+  height: 70px;          /* controls visible logo size */
+  width: auto;
+  max-width: 180px;      /* prevents overflow */
+  object-fit: contain;
+  display: block;
+}
+  .auth-card img,
+  .auth-logo-mini {
+    height: 26px;
+    width: auto;
+    object-fit: contain;
+    display: block;
+  }
+  .auth-logo-img {
+    height: 52px;
+    width: auto;
+    max-width: 160px;
+    object-fit: contain;
+    display: block;
+  }
       .auth-left h2 {
         font-family: var(--font-head); font-weight: 700; font-size: 34px;
         color: #fff; line-height: 1.2; margin-bottom: 16px; letter-spacing: -0.5px;
@@ -577,6 +598,32 @@
       .risk-med   { background: var(--amber-bg); color: var(--amber);     border: 1px solid #f5d9a0; }
       .risk-low   { background: var(--green-bg); color: var(--green-dim); border: 1px solid var(--green-pill); }
 
+
+      /* ══════════════════════════════════════════
+         SIDEBAR LANGUAGE SELECTOR
+      ══════════════════════════════════════════ */
+      .sidebar-lang-select {
+        width: 100%;
+        background: rgba(255,255,255,0.07);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 7px;
+        padding: 7px 10px;
+        font-size: 12px;
+        font-weight: 500;
+        color: rgba(235,245,228,0.8);
+        cursor: pointer;
+        outline: none;
+        font-family: var(--font-body);
+        appearance: none;
+      }
+      .sidebar-lang-select:focus {
+        border-color: var(--green);
+        background: rgba(255,255,255,0.1);
+      }
+      .sidebar-lang-select option {
+        background: var(--sidebar);
+        color: #fff;
+      }
 
       /* ══════════════════════════════════════════
          MISC

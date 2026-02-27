@@ -11,10 +11,9 @@ export default function Topbar({ onNav, tab }) {
     <div className="topbar">
       <div className="topbar-logo" onClick={() => onNav && onNav("home")}>
         <div className="topbar-logo-wrap">
-          <div className="topbar-logo-ring" />
-          <img src={logo} alt="AgriRakshak" style={{ width: 34, height: 34, borderRadius: 8, objectFit: 'contain' }} />
+          <img src={logo} alt="AgriRakshak" style={{ width: 32, height: 32, borderRadius: 7, objectFit: 'cover', objectPosition: 'center' }} />
         </div>
-        <span className="topbar-logo-text">AGRi<span>Rakshak</span></span>
+        <span className="topbar-logo-text">AGRi<span>रक्षक</span></span>
       </div>
 
       <div className="topbar-right">

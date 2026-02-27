@@ -15,7 +15,7 @@ docker-compose -f docker/docker-compose.yml up -d
 
 This will start:
 - PostgreSQL on port 5432
-- Backend API on port 5000
+- Backend API on port 5001
 - Frontend on port 5173
 
 ---
