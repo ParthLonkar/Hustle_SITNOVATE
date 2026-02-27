@@ -75,12 +75,59 @@ export default function FarmerHome() {
   const selectedCrop = useMemo(() => crops.find((c) => c.id === cropId), [crops, cropId]);
 
   const NAV_ITEMS = [
-    { id: "home", icon: "🏠", label: t('dashboard') },
-    { id: "recommend", icon: "✨", label: t('getRecommendation') },
-    { id: "prices", icon: "₹", label: t('livePrices') },
-    { id: "weather", icon: "☀", label: t('weather') },
-    { id: "simulator", icon: "⚙", label: t('simulator') },
-    { id: "history", icon: "⏰", label: t('history') },
+    {
+      id: "home", label: t('dashboard'),
+      icon: (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+        </svg>
+      ),
+    },
+    {
+      id: "recommend", label: t('getRecommendation'),
+      icon: (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+        </svg>
+      ),
+    },
+    {
+      id: "prices", label: t('livePrices'),
+      icon: (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>
+        </svg>
+      ),
+    },
+    {
+      id: "weather", label: t('weather'),
+      icon: (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+      ),
+    },
+    {
+      id: "simulator", label: t('simulator'),
+      icon: (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
+        </svg>
+      ),
+    },
+    {
+      id: "history", label: t('history'),
+      icon: (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="12 8 12 12 14 14"/><path d="M3.05 11a9 9 0 1 0 .5-4"/>
+          <polyline points="3 3 3 7 7 7"/>
+        </svg>
+      ),
+    },
   ];
 
   useEffect(() => {
@@ -260,12 +307,24 @@ export default function FarmerHome() {
       <div className="sidebar-section-label">{t('quickStats')}</div>
       <div style={{ padding: "0 18px 12px" }}>
         {[
-          { label: t('recommendations'), val: history.length },
-          { label: t('activeCrop'), val: selectedCrop?.name || "-" },
-          { label: t('region'), val: region || t('notSet') },
+          {
+            label: t('recommendations'), val: history.length,
+            icon: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          },
+          {
+            label: t('activeCrop'), val: selectedCrop?.name || "-",
+            icon: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22V12"/><path d="M5 12H2a10 10 0 0018 0h-3"/><path d="M12 12C12 6 7 3 7 3s0 5 5 9z"/><path d="M12 12c0-6 5-9 5-9s0 5-5 9z"/></svg>
+          },
+          {
+            label: t('region'), val: region || t('notSet'),
+            icon: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          },
         ].map(s => (
           <div key={s.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, gap: 8 }}>
-            <div style={{ fontSize: 11, color: "var(--txt-inv2)", flexShrink: 0 }}>{s.label}</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--txt-inv2)", flexShrink: 0 }}>
+              <span style={{ opacity: 0.6 }}>{s.icon}</span>
+              <span style={{ fontSize: 11 }}>{s.label}</span>
+            </div>
             <div style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.8)", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap", maxWidth: 110, textAlign: "right" }}>{s.val}</div>
           </div>
         ))}
@@ -274,7 +333,10 @@ export default function FarmerHome() {
       {/* Logout */}
       <div className="sidebar-logout">
         <button className="sidebar-logout-btn" onClick={logout}>
-          <span>🚪</span> {t('signOut')}
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+          {t('signOut')}
         </button>
       </div>
     </aside>
