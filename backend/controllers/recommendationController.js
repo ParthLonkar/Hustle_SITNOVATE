@@ -286,7 +286,11 @@ export const generateRecommendation = async (req, res) => {
     const baseWeatherRisk = estimateSpoilageRisk(weather);
     console.log("Weather spoilage base risk:", baseWeatherRisk);
 
-    const ml = await tryMlRecommendation({ cropId: cropIdNum, region, quantity });
+    // Fetch live mandi prices BEFORE calling ML so it can pick the best mandi
+    const livePrices = await getLiveMandi({ cropName: crop?.name || "" });
+    const mandiPricesForMl = livePrices ? [livePrices] : [];
+
+    const ml = await tryMlRecommendation({ cropId: cropIdNum, region, quantity, mandiPrices: mandiPricesForMl });
 
     let suggestedMandi = null;
     let harvestWindow = "3-7 days";

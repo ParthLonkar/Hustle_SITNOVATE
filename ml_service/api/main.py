@@ -157,16 +157,37 @@ def determine_harvest_window(weather_data, spoilage_risk):
     else:
         return "3-5 days"
 
-def determine_best_mandi(mandi_prices):
+# Fallback markets by crop when no live data is passed in
+CROP_DEFAULT_MANDIS = {
+    'cotton':      ('Guntur Mandi',    6400),
+    'soybean':     ('Indore Mandi',    4600),
+    'wheat':       ('Karnal APMC',     2750),
+    'rice':        ('Ludhiana APMC',   3100),
+    'maize':       ('Davangere APMC',  2100),
+    'potato':      ('Agra Mandi',      1400),
+    'onion':       ('Nashik Mandi',    1650),
+    'tomato':      ('Kolar APMC',      2200),
+    'orange':      ('Nagpur APMC',     4500),
+    'pomegranate': ('Solapur Mandi',   7500),
+    'gram':        ('Akola Mandi',     5400),
+    'mustard':     ('Bharatpur APMC',  5100),
+}
+
+def determine_best_mandi(mandi_prices, crop_name=None):
     """Determine best mandi based on prices"""
     if not mandi_prices or len(mandi_prices) == 0:
-        return "Nearest Mandi", 0
+        # Use crop-specific default instead of generic "Nearest Mandi"
+        if crop_name:
+            key = crop_name.lower().strip()
+            if key in CROP_DEFAULT_MANDIS:
+                return CROP_DEFAULT_MANDIS[key]
+        return "Nagpur APMC", 0
     
     # Sort by price (highest first)
     sorted_prices = sorted(mandi_prices, key=lambda x: x.get('price', 0), reverse=True)
     best = sorted_prices[0]
     
-    return best.get('mandi_name', 'Unknown'), best.get('price', 0)
+    return best.get('mandi_name', best.get('market', 'Nagpur APMC')), best.get('price', 0)
 
 @app.route('/health', methods=['GET'])
 def health_check():
@@ -256,7 +277,7 @@ def recommend():
             spoilage_model_used = spoilage_result['model_used']
         
         # Determine best mandi
-        suggested_mandi, mandi_price = determine_best_mandi(mandi_prices)
+        suggested_mandi, mandi_price = determine_best_mandi(mandi_prices, crop_name)
         
         # Use actual mandi price if available
         if mandi_price > 0:
