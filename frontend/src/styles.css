@@ -68,7 +68,20 @@ html, body, #root { height: 100%; font-family: 'DM Sans', sans-serif; background
 .auth-wrap { min-height: 100vh; display: grid; grid-template-columns: 1fr 1fr; }
 .auth-left { background: var(--soil); display: flex; flex-direction: column; justify-content: center; padding: 60px; position: relative; overflow: hidden; }
 .auth-left::before { content: ''; position: absolute; top: -100px; right: -100px; width: 400px; height: 400px; background: radial-gradient(circle, rgba(90,173,69,.15), transparent 70%); }
-.auth-left-logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 24px; color: var(--lime); margin-bottom: 60px; display: flex; align-items: center; gap: 10px; }
+.auth-left-logo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 40px;
+}
+
+.auth-left-logo img {
+  height: 65px;          /* adjust between 60–75px */
+  width: auto;
+  max-width: 180px;
+  object-fit: contain;
+  display: block;
+}
 .auth-left h2 { font-family: 'Syne', sans-serif; font-size: 36px; font-weight: 800; color: var(--cream); line-height: 1.2; margin-bottom: 16px; }
 .auth-left p { color: rgba(253,250,243,.55); font-size: 15px; line-height: 1.7; }
 .auth-right { background: var(--fog); display: flex; align-items: center; justify-content: center; padding: 40px; }
@@ -89,7 +102,11 @@ html, body, #root { height: 100%; font-family: 'DM Sans', sans-serif; background
 .app-shell { display: grid; grid-template-rows: 64px 1fr; min-height: 100vh; background: var(--fog); }
 .topbar { background: white; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 32px; position: sticky; top: 0; z-index: 100; }
 .topbar-logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 18px; color: var(--leaf); display: flex; align-items: center; gap: 8px; }
-.topbar-logo-icon { width: 28px; height: 28px; background: var(--sprout); border-radius: 7px; display: grid; place-items: center; font-size: 14px; }
+.topbar-logo img {
+  height: 30px;
+  width: auto;
+  object-fit: contain;
+}
 .topbar-right { display: flex; align-items: center; gap: 16px; }
 .user-chip { display: flex; align-items: center; gap: 8px; background: var(--fog); border: 1px solid var(--border); padding: 6px 14px 6px 6px; border-radius: 100px; font-size: 13px; font-weight: 500; }
 .user-avatar { width: 28px; height: 28px; background: var(--leaf); border-radius: 50%; display: grid; place-items: center; color: white; font-size: 12px; font-weight: 700; }

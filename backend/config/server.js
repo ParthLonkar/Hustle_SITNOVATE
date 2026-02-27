@@ -15,11 +15,24 @@ dotenv.config();
 
 const app = express();
 
-app.use(cors());
+// Configure CORS to allow all origins for development
+app.use(cors({
+  origin: true, // Allow all origins in development
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json());
 
+// Add request logging
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  next();
+});
+
 app.get("/", (req, res) => {
-  res.json({ message: "Agrichain API running" });
+  res.json({ message: "Agrichain API running", timestamp: new Date().toISOString() });
 });
 
 app.use("/api/auth", authRoutes);
@@ -36,7 +49,14 @@ app.use((req, res) => {
   res.status(404).json({ message: "Route not found" });
 });
 
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error("Server error:", err);
+  res.status(500).json({ message: "Internal server error", error: err.message });
+});
+
 const port = Number(process.env.PORT || 5000);
 app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+  console.log(`Server running on http://localhost:${port}`);
+  console.log(`CORS enabled for all origins`);
 });

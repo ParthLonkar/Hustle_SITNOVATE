@@ -96,7 +96,7 @@ function HeroSlideshow() {
             <div className="lp-slide-caption">
               <div className="lp-slide-caption-tag">
                 <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#a8e063", display: "inline-block" }} />
-                AgriRakshak
+                Agriरक्षक
               </div>
               <h3>{s.caption}</h3>
               <p>{s.sub}</p>
@@ -248,13 +248,26 @@ const landingCSS = `
   .lp-fb-btn { background: #5aad45; color: #fff; border: none; padding: 13px; border-radius: 9px; font-family: 'Inter', sans-serif; font-weight: 600; font-size: 15px; cursor: pointer; transition: all .2s; box-shadow: 0 2px 10px rgba(90,173,69,0.3); }
   .lp-fb-btn:hover { background: #3d7a2e; transform: translateY(-1px); }
   .lp-fb-sent { text-align: center; padding: 36px; color: #3d7a2e; font-weight: 600; font-size: 16px; }
-  .lp-ql-section { display: flex; flex-direction: column; gap: 36px; }
-  .lp-ql-block-title { font-family: 'Inter', sans-serif; font-weight: 600; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: #3d7a2e; margin-bottom: 14px; }
-  .lp-ql-list { display: flex; flex-direction: column; gap: 8px; }
-  .lp-ql-link { display: flex; align-items: center; gap: 10px; color: #4d6245; text-decoration: none; font-size: 14px; transition: all .2s; padding: 7px 10px; border-radius: 7px; }
-  .lp-ql-link:hover { color: #3d7a2e; background: #eaf5e2; }
-  .lp-ql-link-icon { font-size: 15px; }
-  .lp-ql-link-ext { margin-left: auto; font-size: 11px; opacity: .5; }
+  .lp-ql-section { display: flex; flex-direction: column; gap: 32px; }
+  .lp-ql-block-title { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #3d7a2e; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .lp-ql-block-title::after { content: ''; flex: 1; height: 1px; background: linear-gradient(to right, #cce8b0, transparent); }
+  .lp-ql-list { display: flex; flex-direction: column; gap: 6px; }
+  .lp-ql-link { display: flex; align-items: center; gap: 12px; color: #2d4a25; text-decoration: none; font-size: 13.5px; font-weight: 500; transition: all .2s; padding: 10px 14px; border-radius: 10px; border: 1px solid transparent; background: #fff; box-shadow: 0 1px 3px rgba(26,36,21,0.06); }
+  .lp-ql-link:hover { color: #1a2415; background: #eaf5e2; border-color: #b8dca0; box-shadow: 0 3px 10px rgba(90,173,69,0.15); transform: translateX(3px); }
+  .lp-ql-link-icon { width: 30px; height: 30px; border-radius: 7px; background: #eaf5e2; border: 1px solid #cce8b0; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; transition: all .2s; }
+  .lp-ql-link:hover .lp-ql-link-icon { background: #5aad45; border-color: #5aad45; }
+  .lp-ql-link-label { flex: 1; }
+  .lp-ql-link-ext { width: 20px; height: 20px; border-radius: 5px; background: #f0f5eb; border: 1px solid #dce8d4; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #8da080; transition: all .2s; flex-shrink: 0; }
+  .lp-ql-link:hover .lp-ql-link-ext { background: #5aad45; border-color: #5aad45; color: #fff; }
+  .lp-ql-app-btn { display: flex; align-items: center; gap: 14px; color: #1a2415; text-decoration: none; font-size: 13.5px; font-weight: 500; transition: all .25s; padding: 13px 16px; border-radius: 12px; border: 1.5px solid #dce8d4; background: #fff; box-shadow: 0 2px 8px rgba(26,36,21,0.07); }
+  .lp-ql-app-btn:hover { border-color: #5aad45; box-shadow: 0 4px 16px rgba(90,173,69,0.2); transform: translateY(-2px); }
+  .lp-ql-app-icon { width: 38px; height: 38px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+  .lp-ql-app-icon.play { background: linear-gradient(135deg, #1a1a2e, #16213e); }
+  .lp-ql-app-icon.apple { background: linear-gradient(135deg, #2d2d2d, #1a1a1a); }
+  .lp-ql-app-text-small { font-size: 10px; color: #8da080; font-weight: 400; line-height: 1; margin-bottom: 2px; letter-spacing: 0.3px; }
+  .lp-ql-app-text-big { font-size: 14px; color: #1a2415; font-weight: 700; line-height: 1; letter-spacing: -0.3px; }
+  .lp-ql-app-arrow { margin-left: auto; color: #c4ddb0; font-size: 16px; transition: all .2s; }
+  .lp-ql-app-btn:hover .lp-ql-app-arrow { color: #5aad45; transform: translate(2px, -2px); }
   .lp-footer-main { padding: 56px 80px; max-width: 1400px; margin: 0 auto; }
   .lp-footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 56px; }
   .lp-footer-brand-desc { font-size: 13px; color: #8da080; line-height: 1.7; margin-top: 14px; max-width: 260px; }
@@ -339,7 +352,7 @@ export default function Landing({ onLogin, onRegister }) {
         <nav className={`lp-nav${scrolled ? " scrolled" : ""}`}>
           <div className="lp-logo">
             <img src={logo} alt="AgriRakshak Logo" className="logo" />
-            <span className="lp-logo-text">AGRi<span>Rakshak</span></span>
+            <span className="lp-logo-text">AGRi<span>रक्षक</span></span>
           </div>
           <div className="lp-nav-actions">
             <LanguageSelector />
@@ -485,7 +498,7 @@ export default function Landing({ onLogin, onRegister }) {
                     {GOV_LINKS.map((l, i) => (
                       <a key={i} className="lp-ql-link" href={l.url} target="_blank" rel="noopener noreferrer">
                         <span className="lp-ql-link-icon">🔗</span>
-                        {l.label}
+                        <span className="lp-ql-link-label">{l.label}</span>
                         <span className="lp-ql-link-ext">↗</span>
                       </a>
                     ))}
@@ -494,13 +507,21 @@ export default function Landing({ onLogin, onRegister }) {
                 <div>
                   <div className="lp-ql-block-title">{t('downloadApp')}</div>
                   <div className="lp-ql-list">
-                    <a className="lp-ql-link" href="#" target="_blank" rel="noopener noreferrer">
-                      <span className="lp-ql-link-icon">▶</span> {t('getPlayStore')}
-                      <span className="lp-ql-link-ext">↗</span>
+                    <a className="lp-ql-app-btn" href="#" target="_blank" rel="noopener noreferrer">
+                      <span className="lp-ql-app-icon play">▶️</span>
+                      <span>
+                        <div className="lp-ql-app-text-small">Get it on</div>
+                        <div className="lp-ql-app-text-big">Google Play</div>
+                      </span>
+                      <span className="lp-ql-app-arrow">↗</span>
                     </a>
-                    <a className="lp-ql-link" href="#" target="_blank" rel="noopener noreferrer">
-                      <span className="lp-ql-link-icon">🍎</span> {t('getAppStore')}
-                      <span className="lp-ql-link-ext">↗</span>
+                    <a className="lp-ql-app-btn" href="#" target="_blank" rel="noopener noreferrer">
+                      <span className="lp-ql-app-icon apple">🍎</span>
+                      <span>
+                        <div className="lp-ql-app-text-small">Download on the</div>
+                        <div className="lp-ql-app-text-big">App Store</div>
+                      </span>
+                      <span className="lp-ql-app-arrow">↗</span>
                     </a>
                   </div>
                 </div>
@@ -513,7 +534,7 @@ export default function Landing({ onLogin, onRegister }) {
               <div>
                 <div className="lp-logo">
                   <div className="lp-logo-box">AR</div>
-                  <span className="lp-logo-text">AGRi<span>Rakshak</span></span>
+                  <span className="lp-logo-text">AGRi<span>रक्षक</span></span>
                 </div>
                 <p className="lp-footer-brand-desc">{t('heroSubtitle')}</p>
                 <div className="lp-footer-socials">
@@ -548,7 +569,7 @@ export default function Landing({ onLogin, onRegister }) {
           <div style={{ borderTop: "1px solid #dce8d4" }}>
             <div className="lp-footer-bottom">
               <div className="lp-footer-copy">
-                © 2026 AgriRakshak. Built for Indian farmers. · Data sourced from{" "}
+                © 2026 Agriरक्षक. Built for Indian farmers. · Data sourced from{" "}
                 <a href="https://agmarknet.gov.in" target="_blank" rel="noopener noreferrer">Agmarknet</a> &{" "}
                 <a href="https://www.enam.gov.in" target="_blank" rel="noopener noreferrer">eNAM</a>
               </div>

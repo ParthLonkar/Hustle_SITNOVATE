@@ -30,16 +30,12 @@ export default function Login({ onSuccess, onSwitch }) {
     <div className="auth-wrap">
       {/* ── Left panel ── */}
       <div className="auth-left">
-        {/* Logo */}
-        <div className="auth-left-logo">
-          <div style={{
-            width: 42, height: 42, borderRadius: 10,
-            background: "linear-gradient(135deg,#166534,#14532d)",
-            border: "1px solid rgba(74,222,128,0.4)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontFamily: "var(--font-head)", fontWeight: 800, fontSize: 14, color: "#4ade80",
-          }}>AR</div>
-          AgriRakshak
+        {/* Logo + Brand */}
+        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 40 }}>
+          <img src={logo} alt="AgriRakshak Logo" className="auth-logo-img" />
+          <span style={{ fontFamily: "var(--font-head)", fontWeight: 800, fontSize: 22, color: "#fff" }}>
+            AGRi<span style={{ color: "var(--g)" }}>रक्षक</span>
+          </span>
         </div>
 
         <h2>{t('welcomeBack')}</h2>
@@ -92,15 +88,9 @@ export default function Login({ onSuccess, onSwitch }) {
         <div className="auth-card" style={{ animation: "fadeUp .6s ease" }}>
           {/* Mini logo for mobile */}
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 28 }}>
-            <div style={{
-              width: 30, height: 30, borderRadius: 7,
-              background: "linear-gradient(135deg,#166534,#14532d)",
-              border: "1px solid rgba(74,222,128,0.4)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontFamily: "var(--font-head)", fontWeight: 800, fontSize: 10, color: "#4ade80",
-            }}>AR</div>
+          <img src={logo} alt="AgriRakshak Logo" className="auth-logo-mini" />
             <span style={{ fontFamily: "var(--font-head)", fontWeight: 800, fontSize: 14, color: "var(--txt)" }}>
-              AGRi<span style={{ color: "var(--g)" }}>Rakshak</span>
+              AGRi<span style={{ color: "var(--g)" }}>रक्षक</span>
             </span>
           </div>
 

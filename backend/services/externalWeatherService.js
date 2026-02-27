@@ -1,91 +1,71 @@
-﻿// Open-Meteo API - Free, no API key required
-// https://open-meteo.com/
-
-const weatherCache = new Map();
-const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes cache
+﻿const weatherCache = new Map();
+const CACHE_TTL_MS = 10 * 60 * 1000;
 
 const cacheKey = ({ region }) => `weather:${region || ""}`;
 
-// Map Indian region names to Open-Meteo coordinates
-const regionCoordinates = {
-  "maharashtra": { lat: 19.7515, lon: 75.7139 },
-  "nagpur": { lat: 21.1458, lon: 79.0882 },
-  "mumbai": { lat: 19.0760, lon: 72.8777 },
-  "pune": { lat: 18.5204, lon: 73.8567 },
-  "delhi": { lat: 28.7041, lon: 77.1025 },
-  "gujarat": { lat: 22.2587, lon: 71.1924 },
-  "karnataka": { lat: 15.3173, lon: 75.7139 },
-  "tamil nadu": { lat: 11.1271, lon: 78.6569 },
-  "west bengal": { lat: 22.9868, lon: 87.8550 },
-  "uttar pradesh": { lat: 27.2046, lon: 77.4977 },
-  "madhya pradesh": { lat: 23.4733, lon: 80.4420 },
-  "rajasthan": { lat: 27.0238, lon: 74.2179 },
-  "haryana": { lat: 29.238, lon: 76.4319 },
-  "punjab": { lat: 31.1471, lon: 75.3413 },
-  "kerala": { lat: 10.8505, lon: 76.2711 },
-  "andhra pradesh": { lat: 15.9129, lon: 79.7400 },
-  "telangana": { lat: 18.1124, lon: 79.0193 },
-  "default": { lat: 20.5937, lon: 78.9629 } // India center
+// Demo weather data
+const getDemoWeather = (region = "Maharashtra") => {
+  const today = new Date();
+  return {
+    location: region,
+    Days: Array.from({ length: 7 }, (_, i) => {
+      const date = new Date(today);
+      date.setDate(date.getDate() + i);
+      return {
+        date: date.toISOString().split('T')[0],
+        temp_max_c: 28 + Math.floor(Math.random() * 8),
+        temp_c: 24 + Math.floor(Math.random() * 6),
+        rain_mm: Math.floor(Math.random() * 25),
+        humid_max_pct: 65 + Math.floor(Math.random() * 25),
+        humid_min_pct: 45 + Math.floor(Math.random() * 15),
+      };
+    })
+  };
 };
 
 export const fetchWeatherUnlocked = async ({ region }) => {
   if (!region) throw new Error("Region is required");
 
-  const key = cacheKey({ region });
-  const cached = weatherCache.get(key);
-  if (cached && cached.expiresAt > Date.now()) {
-    console.log("Returning cached weather data for:", region);
-    return cached.data;
+  const appId = process.env.WEATHERUNLOCKED_APP_ID;
+  const appKey = process.env.WEATHERUNLOCKED_APP_KEY;
+
+  // Check if API keys are configured
+  if (!appId || !appKey || appId === 'undefined' || appKey === 'undefined') {
+    console.log("Weather API keys not configured, using demo data");
+    return getDemoWeather(region);
   }
 
-  // Get coordinates for region
-  const regionKey = region.toLowerCase().trim();
-  const coords = regionCoordinates[regionKey] || regionCoordinates["default"];
-  
-  console.log("Fetching weather for:", region, "coordinates:", coords);
+  const key = cacheKey({ region });
+  const cached = weatherCache.get(key);
+  if (cached && cached.expiresAt > Date.now()) return cached.data;
 
-  // Open-Meteo API - Free, no API key needed
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${coords.lat}&longitude=${coords.lon}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,relative_humidity_2m_max&timezone=Asia/Kolkata&forecast_days=7`;
+  const encoded = encodeURIComponent(region);
+  const url = `https://api.weatherunlocked.com/api/forecast/${encoded}?app_id=${appId}&app_key=${appKey}`;
 
-  console.log("Weather API URL:", url);
+  console.log("Fetching weather from:", url);
 
   try {
     const res = await fetch(url);
-
     if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`Weather API error: ${text}`);
+      console.warn("Weather API error, using demo data");
+      return getDemoWeather(region);
     }
-
     const data = await res.json();
-    console.log("Weather data received:", JSON.stringify(data).substring(0, 200));
-
-    weatherCache.set(key, {
-      data,
-      expiresAt: Date.now() + CACHE_TTL_MS,
-    });
-
+    weatherCache.set(key, { data, expiresAt: Date.now() + CACHE_TTL_MS });
     return data;
-  } catch (error) {
-    console.error("Weather fetch error:", error.message);
-    throw error;
+  } catch (err) {
+    console.warn("Weather fetch failed, using demo data:", err.message);
+    return getDemoWeather(region);
   }
 };
 
 export const normalizeWeatherUnlocked = (raw) => {
-  if (!raw || !raw.daily) {
-    console.log("No daily data in response");
-    return [];
-  }
-
-  const { daily } = raw;
-  const days = daily.time || [];
-  
-  return days.map((date, i) => ({
-    region: "",
-    temperature: Number(daily.temperature_2m_max?.[i] ?? daily.temperature_2m_min?.[i] ?? 0),
-    rainfall: Number(daily.precipitation_sum?.[i] ?? 0),
-    humidity: Number(daily.relative_humidity_2m_max?.[i] ?? 0),
-    forecast_date: date,
+  if (!raw || !raw.Days) return [];
+  return raw.Days.slice(0, 7).map((d) => ({
+    region: raw.location || "",
+    temperature: Number(d.temp_max_c ?? d.temp_c ?? 0),
+    rainfall: Number(d.rain_mm ?? 0),
+    humidity: Number(d.humid_max_pct ?? d.humid_min_pct ?? 0),
+    forecast_date: d.date,
   }));
 };
