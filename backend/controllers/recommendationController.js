@@ -209,12 +209,12 @@ const getUserRegion = async (userId) => {
   return result.rows[0]?.region || "";
 };
 
-const getLiveMandi = async ({ cropName, region }) => {
+const getLiveMandi = async ({ cropName }) => {
   if (!cropName) return null;
-  const raw = await fetchMandiPrices({ crop: cropName, state: region });
+  // No state filter — fetch all national markets and pick highest price
+  const raw = await fetchMandiPrices({ crop: cropName });
   const normalized = normalizeMandiPrices(raw);
   if (!normalized.length) return null;
-  // Sort by price (descending) and use the one with best price
   const best = normalized.sort((a, b) => Number(b.price || 0) - Number(a.price || 0))[0];
   return best || null;
 };
@@ -315,14 +315,14 @@ export const generateRecommendation = async (req, res) => {
       console.log("Weather and spoilage risk:", { weatherCount: weather.length, spoilageRisk });
 
       // Get live mandi prices as fallback
-      const liveMandi = await getLiveMandi({ cropName: crop?.name || "", region });
-      console.log("Live mandi:", liveMandi);
+      const liveMandi = await getLiveMandi({ cropName: crop?.name || "" });
+      console.log("Live mandi result:", JSON.stringify(liveMandi));
 
       const transportCost = estimateTransportCost({ quantity, distanceKm: liveMandi?.distance || 30 });
       console.log("Transport cost:", transportCost);
 
       if (liveMandi && liveMandi.price > 0) {
-        suggestedMandi = liveMandi.mandi_name;
+        suggestedMandi = liveMandi.mandi_name || liveMandi.market || "Top Mandi";
         predictedPrice = Number(liveMandi.price || 0);
         predictedProfit = calculateProfit({
           pricePerUnit: predictedPrice,
@@ -340,15 +340,16 @@ export const generateRecommendation = async (req, res) => {
         });
         explanationText = "Selected mandi with highest recent stored price and adjusted for transport cost.";
       } else {
-        // Use default values when no data available
-        suggestedMandi = "Nearest Mandi";
-        predictedPrice = 2000; // Default reasonable price
+        // Final fallback — use a region-appropriate name with estimated price
+        const regionMandi = region ? `${region.split(" ")[0]} APMC` : "Nagpur APMC";
+        suggestedMandi = regionMandi;
+        predictedPrice = 2000;
         predictedProfit = calculateProfit({
           pricePerUnit: predictedPrice,
           quantity: Number(quantity || 0),
           transportCost
         });
-        explanationText = "No recent mandi price data found. Using estimated price based on market averages.";
+        explanationText = "Using estimated market price. Live mandi data unavailable — connect DATA_GOV_API_KEY for real prices.";
       }
 
       const soilScore = crop

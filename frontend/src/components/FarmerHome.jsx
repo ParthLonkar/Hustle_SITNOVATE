@@ -40,17 +40,7 @@ function LanguageSelector() {
     <select 
       value={language} 
       onChange={(e) => setLanguage(e.target.value)}
-      style={{
-        background: "transparent",
-        border: "1px solid var(--border)",
-        borderRadius: "6px",
-        padding: "6px 10px",
-        fontSize: "13px",
-        fontWeight: 500,
-        color: "var(--txt)",
-        cursor: "pointer",
-        outline: "none",
-      }}
+      className="sidebar-lang-select"
     >
       <option value="en">English</option>
       <option value="hi">हिन्दी</option>
@@ -132,8 +122,7 @@ export default function FarmerHome() {
       try {
         const controller = { cancelled: false };
         mandiAbortRef.current = controller;
-        const stateForQuery = resolveStateForQuery(debouncedRegion);
-        const data = await apiGet(`/api/mandi-prices?live=1&crop=${encodeURIComponent(selectedCrop.name)}&state=${encodeURIComponent(stateForQuery)}&limit=100`);
+        const data = await apiGet(`/api/mandi-prices?live=1&crop=${encodeURIComponent(selectedCrop.name)}&limit=500`);
         if (!controller.cancelled) setMandis(data);
       } catch {
         if (!mandiAbortRef.current?.cancelled) setMandis([]);
@@ -245,13 +234,16 @@ export default function FarmerHome() {
 
   const Sidebar = () => (
     <aside className="farmer-sidebar">
-      <div style={{ padding: "0 18px 20px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: "var(--txt3)", textTransform: "uppercase", letterSpacing: 1.2 }}>
-            {t('farmerPortal')}
-          </div>
-          <LanguageSelector />
+      {/* Header: portal label + language selector */}
+      <div style={{ padding: "16px 18px 12px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: "var(--txt-inv2)", textTransform: "uppercase", letterSpacing: 1.4, marginBottom: 8 }}>
+          {t('farmerPortal')}
         </div>
+        <LanguageSelector />
+      </div>
+
+      {/* Nav items */}
+      <div style={{ flex: 1, padding: "8px 0", overflowY: "auto" }}>
         {NAV_ITEMS.map(item => (
           <button
             key={item.id}
@@ -263,21 +255,23 @@ export default function FarmerHome() {
           </button>
         ))}
       </div>
-      <div style={{ padding: "16px 18px", borderTop: "1px solid var(--border)", marginTop: "auto" }}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: "var(--txt3)", textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 12 }}>
-          {t('quickStats')}
-        </div>
+
+      {/* Quick stats */}
+      <div className="sidebar-section-label">{t('quickStats')}</div>
+      <div style={{ padding: "0 18px 12px" }}>
         {[
           { label: t('recommendations'), val: history.length },
           { label: t('activeCrop'), val: selectedCrop?.name || "-" },
           { label: t('region'), val: region || t('notSet') },
         ].map(s => (
-          <div key={s.label} style={{ marginBottom: 10 }}>
-            <div style={{ fontSize: 11, color: "var(--txt3)", marginBottom: 2 }}>{s.label}</div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--txt)" }}>{s.val}</div>
+          <div key={s.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, gap: 8 }}>
+            <div style={{ fontSize: 11, color: "var(--txt-inv2)", flexShrink: 0 }}>{s.label}</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.8)", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap", maxWidth: 110, textAlign: "right" }}>{s.val}</div>
           </div>
         ))}
       </div>
+
+      {/* Logout */}
       <div className="sidebar-logout">
         <button className="sidebar-logout-btn" onClick={logout}>
           <span>🚪</span> {t('signOut')}

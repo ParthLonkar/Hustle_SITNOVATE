@@ -1,7 +1,7 @@
 ﻿const mandiCache = new Map();
-const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+const CACHE_TTL_MS = 0; // Disabled — re-enable to 5*60*1000 in production
 
-const cacheKey = ({ crop, state, market }) => `mandi:${crop || ""}:${state || ""}:${market || ""}`;
+const cacheKey = ({ crop, market }) => `mandi:${crop || ""}:${market || ""}`;
 
 // Map crop names to AGMARKNET commodities
 const cropMapping = {
@@ -36,7 +36,7 @@ export const fetchMandiPrices = async ({ crop, state, market }) => {
       const params = new URLSearchParams();
       params.set("api-key", apiKey);
       params.set("format", "json");
-      params.set("limit", "50");
+      params.set("limit", "500");
       
       if (crop) {
         const agmarkCrop = cropMapping[crop.toLowerCase()] || crop;
@@ -81,9 +81,55 @@ const deterministicHash = (str) => {
 
 // Fallback mock data when API is not available - deterministic based on crop/state
 const getMockMandiData = (crop, state) => {
-  const states = ["Maharashtra", "Madhya Pradesh", "Gujarat", "Karnataka", "Telangana"];
-  const districts = ["Nagpur", "Wardha", "Amravati", "Akola", "Yavatmal", "Buldhana"];
-  const markets = ["Nagpur APMC", "Wardha Mandi", "Amravati APMC", "Akola Mandi", "Yavatmal Market"];
+  const allMarkets = [
+    { market: "Nagpur APMC",       state: "Maharashtra",    district: "Nagpur"      },
+    { market: "Wardha Mandi",      state: "Maharashtra",    district: "Wardha"      },
+    { market: "Amravati APMC",     state: "Maharashtra",    district: "Amravati"    },
+    { market: "Akola Mandi",       state: "Maharashtra",    district: "Akola"       },
+    { market: "Yavatmal Market",   state: "Maharashtra",    district: "Yavatmal"    },
+    { market: "Pune APMC",         state: "Maharashtra",    district: "Pune"        },
+    { market: "Nashik Mandi",      state: "Maharashtra",    district: "Nashik"      },
+    { market: "Aurangabad APMC",   state: "Maharashtra",    district: "Aurangabad"  },
+    { market: "Solapur Mandi",     state: "Maharashtra",    district: "Solapur"     },
+    { market: "Kolhapur APMC",     state: "Maharashtra",    district: "Kolhapur"    },
+    { market: "Latur Mandi",       state: "Maharashtra",    district: "Latur"       },
+    { market: "Jalgaon APMC",      state: "Maharashtra",    district: "Jalgaon"     },
+    { market: "Indore Mandi",      state: "Madhya Pradesh", district: "Indore"      },
+    { market: "Bhopal APMC",       state: "Madhya Pradesh", district: "Bhopal"      },
+    { market: "Ujjain Mandi",      state: "Madhya Pradesh", district: "Ujjain"      },
+    { market: "Dewas Market",      state: "Madhya Pradesh", district: "Dewas"       },
+    { market: "Ratlam APMC",       state: "Madhya Pradesh", district: "Ratlam"      },
+    { market: "Mandsaur Mandi",    state: "Madhya Pradesh", district: "Mandsaur"    },
+    { market: "Ahmedabad APMC",    state: "Gujarat",        district: "Ahmedabad"   },
+    { market: "Rajkot Mandi",      state: "Gujarat",        district: "Rajkot"      },
+    { market: "Surat APMC",        state: "Gujarat",        district: "Surat"       },
+    { market: "Anand Market",      state: "Gujarat",        district: "Anand"       },
+    { market: "Junagadh Mandi",    state: "Gujarat",        district: "Junagadh"    },
+    { market: "Ludhiana APMC",     state: "Punjab",         district: "Ludhiana"    },
+    { market: "Amritsar Mandi",    state: "Punjab",         district: "Amritsar"    },
+    { market: "Bathinda Market",   state: "Punjab",         district: "Bathinda"    },
+    { market: "Karnal APMC",       state: "Haryana",        district: "Karnal"      },
+    { market: "Hisar Mandi",       state: "Haryana",        district: "Hisar"       },
+    { market: "Sirsa Market",      state: "Haryana",        district: "Sirsa"       },
+    { market: "Warangal APMC",     state: "Telangana",      district: "Warangal"    },
+    { market: "Nizamabad Mandi",   state: "Telangana",      district: "Nizamabad"   },
+    { market: "Karimnagar Market", state: "Telangana",      district: "Karimnagar"  },
+    { market: "Bangalore APMC",    state: "Karnataka",      district: "Bangalore"   },
+    { market: "Hubli Mandi",       state: "Karnataka",      district: "Hubli"       },
+    { market: "Gulbarga Market",   state: "Karnataka",      district: "Gulbarga"    },
+    { market: "Jaipur APMC",       state: "Rajasthan",      district: "Jaipur"      },
+    { market: "Kota Mandi",        state: "Rajasthan",      district: "Kota"        },
+    { market: "Bikaner Market",    state: "Rajasthan",      district: "Bikaner"     },
+    { market: "Lucknow APMC",      state: "Uttar Pradesh",  district: "Lucknow"     },
+    { market: "Kanpur Mandi",      state: "Uttar Pradesh",  district: "Kanpur"      },
+    { market: "Agra Market",       state: "Uttar Pradesh",  district: "Agra"        },
+    { market: "Vijayawada APMC",   state: "Andhra Pradesh", district: "Vijayawada"  },
+    { market: "Guntur Mandi",      state: "Andhra Pradesh", district: "Guntur"      },
+    { market: "Kurnool Market",    state: "Andhra Pradesh", district: "Kurnool"     },
+  ];
+
+  // Return all markets nationally so users can compare across states
+  const markets = allMarkets;
   
   // Base prices per quintal in INR (realistic market prices)
   const cropPriceBase = {
@@ -110,30 +156,27 @@ const getMockMandiData = (crop, state) => {
   
   const normalizedCrop = (crop || "").toLowerCase();
   const basePrice = cropPriceBase[normalizedCrop] || 3000;
-  
+
   // Use deterministic seed based on crop and state
   const seed = deterministicHash((normalizedCrop || "") + (state || ""));
-  
+
   return {
-    records: markets.map((market, idx) => {
-      // Deterministic variation based on seed
+    records: markets.map((m, idx) => {
       const seedOffset = (seed + idx * 137) % 500;
       const priceVariation = seedOffset - 250;
-      
-      // Deterministic distance
       const distance = 25 + ((seed + idx * 73) % 90);
-      
+
       return {
-        market: market,
-        commodity: crop || "Mixed",
-        modal_price: basePrice + priceVariation,
-        min_price: basePrice + priceVariation - 150,
-        max_price: basePrice + priceVariation + 150,
-        arrival: 100 + ((seed + idx * 41) % 400),
+        market:       m.market,
+        commodity:    crop || "Mixed",
+        modal_price:  basePrice + priceVariation,
+        min_price:    basePrice + priceVariation - 150,
+        max_price:    basePrice + priceVariation + 150,
+        arrival:      100 + ((seed + idx * 41) % 400),
         arrival_date: new Date().toISOString().split('T')[0],
-        state: state || states[idx % states.length],
-        district: districts[idx % districts.length],
-        distance: distance
+        state:        m.state,
+        district:     m.district,
+        distance:     distance,
       };
     })
   };

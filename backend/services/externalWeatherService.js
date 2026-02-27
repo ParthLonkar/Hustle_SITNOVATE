@@ -2,8 +2,7 @@
 // https://open-meteo.com/
 
 const weatherCache = new Map();
-const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes cache
-
+const CACHE_TTL_MS = 0;
 const cacheKey = ({ region }) => `weather:${region || ""}`;
 
 // Map Indian region names to Open-Meteo coordinates
