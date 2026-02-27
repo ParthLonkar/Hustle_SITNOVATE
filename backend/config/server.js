@@ -1,4 +1,4 @@
-﻿import express from "express";
+import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import authRoutes from "../routes/authRoutes.js";
@@ -9,6 +9,7 @@ import weatherRoutes from "../routes/weatherRoutes.js";
 import recommendationRoutes from "../routes/recommendationRoutes.js";
 import statsRoutes from "../routes/statsRoutes.js";
 import preservationRoutes from "../routes/preservationRoutes.js";
+import traderRoutes from "../routes/traderRoutes.js";
 
 dotenv.config();
 
@@ -29,6 +30,7 @@ app.use("/api/weather", weatherRoutes);
 app.use("/api/recommendations", recommendationRoutes);
 app.use("/api/stats", statsRoutes);
 app.use("/api/preservation-actions", preservationRoutes);
+app.use("/api/trader", traderRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ message: "Route not found" });

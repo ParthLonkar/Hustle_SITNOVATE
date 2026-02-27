@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
   name          TEXT NOT NULL,
   email         TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
-  role          TEXT NOT NULL CHECK (role IN ('farmer','admin','trader')),
+  role          TEXT NOT NULL CHECK (role IN ('farmer','admin','trader','vendor')),
   region        TEXT NOT NULL
 );
 
